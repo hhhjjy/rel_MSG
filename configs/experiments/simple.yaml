@@ -36,7 +36,7 @@ num_workers: 1
 train_bs: 8
 bs_video: 2
 eval_bs: 4 # debug test
-forward_version: 'step2'
+stage: 'step2'
 log_every: 1
 chkpt_every: 300
 

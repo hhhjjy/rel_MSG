@@ -91,7 +91,7 @@ def eval_per_video(dataset, dataloader, config, mapper, model, device, backproc,
 
 
             # 根据配置选择 forward 版本
-            forward_version = config.get('forward_version', 'amosg')
+            forward_version = config.get('stage', 'amosg')
             if forward_version == 'step2':
                 results = model.forward_step2(images, additional_info)
                 compute_loss_fn = model.compute_loss_step2

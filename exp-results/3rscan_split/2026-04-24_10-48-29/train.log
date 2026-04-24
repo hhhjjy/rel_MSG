@@ -1,0 +1,243 @@
+2026-04-24 10:48:29 - INFO - Experiment directory created at ./exp-results/3rscan_split\2026-04-24_10-48-29
+2026-04-24 10:48:29 - INFO - Training config: {
+    "seed": 42,
+    "device": 0,
+    "pp_threshold": 0.3,
+    "object_threshold": 0.2,
+    "vis_det": false,
+    "eval_split": "test",
+    "train_split": "train",
+    "output_dir": "./exp-results/3rscan_split\\2026-04-24_10-48-29",
+    "output_file": "train",
+    "learning_rate": 2e-05,
+    "num_epochs": 10000,
+    "num_workers": 1,
+    "train_bs": 8,
+    "eval_bs": 4,
+    "bs_video": 2,
+    "eval_step": 100,
+    "log_every": 1,
+    "chkpt_every": 300,
+    "loss_params": {
+        "pr": 1.0,
+        "obj": 1.0,
+        "tcr": 0.0,
+        "mean": 0.0
+    },
+    "dataset_path": "D:\\SceneGraph\\code\\MSG\\dataset\\simple_3rscan",
+    "all_splits": [
+        "Training",
+        "Validation",
+        "Test",
+        "mini-val"
+    ],
+    "image_size": [
+        960,
+        540
+    ],
+    "model_image_size": [
+        224,
+        224
+    ],
+    "num_classes": 18,
+    "class_map": {
+        "bathtub": 1,
+        "bed": 2,
+        "bookshelf": 3,
+        "cabinet": 4,
+        "chair": 5,
+        "counter": 6,
+        "curtain": 7,
+        "desk": 8,
+        "door": 9,
+        "floor": 10,
+        "otherfurniture": 11,
+        "picture": 12,
+        "refridgerator": 13,
+        "shower curtain": 14,
+        "sink": 15,
+        "sofa": 16,
+        "table": 17,
+        "toilet": 18,
+        "wall": 19,
+        "window": 20,
+        "background": 0
+    },
+    "inv_class_map": {
+        "1": "bathtub",
+        "2": "bed",
+        "3": "bookshelf",
+        "4": "cabinet",
+        "5": "chair",
+        "6": "counter",
+        "7": "curtain",
+        "8": "desk",
+        "9": "door",
+        "10": "floor",
+        "11": "otherfurniture",
+        "12": "picture",
+        "13": "refridgerator",
+        "14": "shower curtain",
+        "15": "sink",
+        "16": "sofa",
+        "17": "table",
+        "18": "toilet",
+        "19": "wall",
+        "20": "window",
+        "0": "background"
+    },
+    "color_dict": {
+        "background": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "bathtub": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "bed": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "bookshelf": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "cabinet": [
+            1.0,
+            1.0,
+            0.0
+        ],
+        "chair": [
+            1.0,
+            0.0,
+            1.0
+        ],
+        "counter": [
+            0.0,
+            1.0,
+            1.0
+        ],
+        "curtain": [
+            0.5,
+            0.0,
+            1.0
+        ],
+        "desk": [
+            0.5,
+            1.0,
+            0.0
+        ],
+        "door": [
+            1.0,
+            0.5,
+            0.0
+        ],
+        "floor": [
+            0.0,
+            0.5,
+            1.0
+        ],
+        "otherfurniture": [
+            0.5,
+            0.0,
+            0.5
+        ],
+        "picture": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "refridgerator": [
+            0.0,
+            0.5,
+            0.5
+        ],
+        "shower curtain": [
+            0.5,
+            0.5,
+            0.0
+        ],
+        "sink": [
+            0.5,
+            0.5,
+            0.5
+        ],
+        "sofa": [
+            0.2,
+            0.8,
+            0.2
+        ],
+        "table": [
+            0.2,
+            0.2,
+            0.8
+        ],
+        "toilet": [
+            0.8,
+            0.2,
+            0.2
+        ],
+        "wall": [
+            0.8,
+            0.8,
+            0.2
+        ],
+        "window": [
+            0.2,
+            0.8,
+            0.8
+        ]
+    },
+    "detector": {
+        "model": "gt",
+        "num_classes": 18,
+        "freeze": true,
+        "weights": "DEFAULT",
+        "pre_saved": false,
+        "result_path": ""
+    },
+    "obj_embedder": {
+        "model": "dinov2-base",
+        "weights": "DEFAULT",
+        "freeze": true,
+        "output_type": "feature"
+    },
+    "place_embedder": {
+        "model": "dinov2-base",
+        "weights": "DEFAULT",
+        "freeze": true,
+        "output_type": "feature"
+    },
+    "associator": {
+        "model": "AoMSG-S-4",
+        "object_dim": 768,
+        "place_dim": 768,
+        "output_dim": 1024
+    },
+    "pr_loss": "mse",
+    "obj_loss": "bce",
+    "pos_weight": 10,
+    "pp_weight": 1,
+    "wandb": false,
+    "resume": false,
+    "resume_path": "/root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth",
+    "eval_output_dir": "./exp-results/eval",
+    "eval_chkpt": "/root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth",
+    "save_every": false,
+    "warmup_epochs": 3,
+    "warmup": false,
+    "forward_version": "step2",
+    "experiment": "simple",
+    "run_id": "2026-04-24_10-48-29"
+}
+
+2026-04-24 10:48:29 - INFO - Number of videos in the training set: 5
+2026-04-24 10:48:34 - INFO - Model and optimizer loaded, total parameter 550027150, trainable 376767498
+2026-04-24 10:48:34 - INFO - start training for 10000 epochs
+2026-04-24 10:48:34 - INFO - Evaluating: Number of videos in the validation set: 5
+2026-04-24 10:48:37 - INFO - Processing video 42384916-60a7-271e-9c1f-6722abc6495d, progress 1/5

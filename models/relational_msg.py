@@ -80,10 +80,11 @@ class FeatureExtractor(nn.Module):
         bbox_feats = self.roi_extractor(img_feats[:, :, 1:, :], bboxes_pos, bboxes_masks, self.training)
         
         if self.feature_refine_method in ['aomsg', 'aomsg_refined']:
+            assert self.association_model is not None, "association_model is None"
             # Step 1: 直接使用 association_model
             if use_cross_view_refine:
                 # Step 2: 先使用 obj_cross_view refine，再传给 association_model
-                refined_bbox_feats = self.obj_cross_view(bbox_feats, img_feats, bboxes_pos, bboxes_masks)
+                refined_bbox_feats = self.obj_cross_view(bbox_feats, None, bboxes_pos, bboxes_masks)
                 results = self.association_model(refined_bbox_feats, img_feats, bboxes_pos)
                 return results, img_feats, bbox_feats, refined_bbox_feats
             else:
@@ -198,7 +199,10 @@ class RelationalMSG(nn.Module):
         self.num_views = config.get('num_views', 4)
         self.num_bboxes_per_view = config.get('num_bboxes_per_view', 20)
         self.stage = config.get('stage', 'step1')
-        self.feature_refine_method = config.get('feature_refine_method', 'aomsg')
+        if self.stage == 'step1':
+            self.feature_refine_method = 'aomsg'
+        elif self.stage == 'step2':
+            self.feature_refine_method = 'aomsg_refined'
         
         # 1. 特征提取层
         self.feature_extractor = FeatureExtractor(config, self.hidden_dim)
