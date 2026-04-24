@@ -1,0 +1,443 @@
+2026-04-22 23:55:09 - INFO - Experiment directory created at ./exp-results/3rscan_split/2026-04-22_23-55-09
+2026-04-22 23:55:09 - INFO - Training config: {
+    "seed": 42,
+    "device": 0,
+    "pp_threshold": 0.3,
+    "object_threshold": 0.2,
+    "vis_det": false,
+    "eval_split": "test",
+    "train_split": "train",
+    "output_dir": "./exp-results/3rscan_split/2026-04-22_23-55-09",
+    "output_file": "train",
+    "learning_rate": 2e-05,
+    "num_epochs": 10000,
+    "num_workers": 8,
+    "train_bs": 384,
+    "eval_bs": 64,
+    "bs_video": 6,
+    "eval_step": 100,
+    "log_every": 1,
+    "chkpt_every": 300,
+    "loss_params": {
+        "pr": 1.0,
+        "obj": 1.0,
+        "tcr": 0.0,
+        "mean": 0.0
+    },
+    "dataset_path": "/root/autodl-tmp/dataset/3rscan_msg_split",
+    "all_splits": [
+        "Training",
+        "Validation",
+        "Test",
+        "mini-val"
+    ],
+    "image_size": [
+        960,
+        540
+    ],
+    "model_image_size": [
+        224,
+        224
+    ],
+    "num_classes": 18,
+    "class_map": {
+        "bathtub": 1,
+        "bed": 2,
+        "bookshelf": 3,
+        "cabinet": 4,
+        "chair": 5,
+        "counter": 6,
+        "curtain": 7,
+        "desk": 8,
+        "door": 9,
+        "floor": 10,
+        "otherfurniture": 11,
+        "picture": 12,
+        "refridgerator": 13,
+        "shower curtain": 14,
+        "sink": 15,
+        "sofa": 16,
+        "table": 17,
+        "toilet": 18,
+        "wall": 19,
+        "window": 20,
+        "background": 0
+    },
+    "inv_class_map": {
+        "1": "bathtub",
+        "2": "bed",
+        "3": "bookshelf",
+        "4": "cabinet",
+        "5": "chair",
+        "6": "counter",
+        "7": "curtain",
+        "8": "desk",
+        "9": "door",
+        "10": "floor",
+        "11": "otherfurniture",
+        "12": "picture",
+        "13": "refridgerator",
+        "14": "shower curtain",
+        "15": "sink",
+        "16": "sofa",
+        "17": "table",
+        "18": "toilet",
+        "19": "wall",
+        "20": "window",
+        "0": "background"
+    },
+    "color_dict": {
+        "background": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "bathtub": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "bed": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "bookshelf": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "cabinet": [
+            1.0,
+            1.0,
+            0.0
+        ],
+        "chair": [
+            1.0,
+            0.0,
+            1.0
+        ],
+        "counter": [
+            0.0,
+            1.0,
+            1.0
+        ],
+        "curtain": [
+            0.5,
+            0.0,
+            1.0
+        ],
+        "desk": [
+            0.5,
+            1.0,
+            0.0
+        ],
+        "door": [
+            1.0,
+            0.5,
+            0.0
+        ],
+        "floor": [
+            0.0,
+            0.5,
+            1.0
+        ],
+        "otherfurniture": [
+            0.5,
+            0.0,
+            0.5
+        ],
+        "picture": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "refridgerator": [
+            0.0,
+            0.5,
+            0.5
+        ],
+        "shower curtain": [
+            0.5,
+            0.5,
+            0.0
+        ],
+        "sink": [
+            0.5,
+            0.5,
+            0.5
+        ],
+        "sofa": [
+            0.2,
+            0.8,
+            0.2
+        ],
+        "table": [
+            0.2,
+            0.2,
+            0.8
+        ],
+        "toilet": [
+            0.8,
+            0.2,
+            0.2
+        ],
+        "wall": [
+            0.8,
+            0.8,
+            0.2
+        ],
+        "window": [
+            0.2,
+            0.8,
+            0.8
+        ]
+    },
+    "detector": {
+        "model": "gt",
+        "num_classes": 18,
+        "freeze": true,
+        "weights": "DEFAULT",
+        "pre_saved": false,
+        "result_path": ""
+    },
+    "obj_embedder": {
+        "model": "dinov2-base",
+        "weights": "DEFAULT",
+        "freeze": true,
+        "output_type": "feature"
+    },
+    "place_embedder": {
+        "model": "dinov2-base",
+        "weights": "DEFAULT",
+        "freeze": true,
+        "output_type": "feature"
+    },
+    "associator": {
+        "model": "AoMSG-S-4",
+        "object_dim": 768,
+        "place_dim": 768,
+        "output_dim": 1024
+    },
+    "pr_loss": "mse",
+    "obj_loss": "bce",
+    "pos_weight": 10,
+    "pp_weight": 1,
+    "wandb": false,
+    "resume": true,
+    "resume_path": "/root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth",
+    "eval_output_dir": "./exp-results/eval",
+    "eval_chkpt": "/root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth",
+    "save_every": false,
+    "warmup_epochs": 3,
+    "warmup": false,
+    "experiment": "aomsg_3rscan_split",
+    "run_id": "2026-04-22_23-55-09"
+}
+
+2026-04-22 23:55:09 - INFO - Number of videos in the training set: 248
+2026-04-22 23:55:11 - INFO - Resume training by Loading model from checkpoint: /root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth
+2026-04-22 23:55:11 - INFO - Model and optimizer loaded, total parameter 326196066, trainable 153035106
+2026-04-22 23:55:11 - INFO - start training for 10000 epochs
+2026-04-22 23:55:17 - INFO - Training on video ['baf67395-8e94-22f8-8100-9c9d7ce1c2b7', 'bcb0fe29-4f39-2c70-9f18-79507a4e9a30', 'c12890dc-d3df-2d0d-87b5-90e9596c3de4', '8eabc453-5af7-2f32-859d-405eb6a2e0d0', '6bde60bc-9162-246f-8e50-ca5054c79322', 'fcf66db4-622d-291c-8720-d0a6bbd17846'], progress 7/248 Epoch 1
+2026-04-22 23:55:29 - INFO - videos=0000001, steps=0000006, Total Loss: 2.1577, 
+2026-04-22 23:55:29 - INFO - Training on video ['c7895f1f-339c-2d13-8172-b32de97f8cce', '80b85891-4a8d-222f-85d0-2b8bf16d79a8', '10b1794e-3938-2467-89a7-ebc89e84cf88', '422885ad-192d-25fc-8631-c3a978a9d3d4', '0ad2d3a3-79e2-2212-9a51-9094be707ec2', '20c9939b-698f-29c5-85a4-68c286bd7053'], progress 13/248 Epoch 1
+2026-04-22 23:55:40 - INFO - videos=0000002, steps=0000011, Total Loss: 1.9023, 
+2026-04-22 23:55:40 - INFO - Training on video ['2e369525-e133-204c-93ab-2b23ce5ef16e', 'a0906008-66f7-2272-9e70-748b317145dd', 'ddc737af-765b-241a-9ea5-0a02dc0876f2', 'baf6738b-8e94-22f8-8085-24c4e5ef5220', '6bde607d-9162-246f-8f84-98cf7ac2374c', '55551075-36f1-29c0-8b64-97a4e71b90ba'], progress 19/248 Epoch 1
+2026-04-22 23:55:50 - INFO - videos=0000003, steps=0000015, Total Loss: 1.7863, 
+2026-04-22 23:55:50 - INFO - Training on video ['43b8caf3-6678-2e38-99da-2aeb70cf8e95', 'b8837e3a-57ec-29c6-8b54-d440ca79a11f', 'c12890da-d3df-2d0d-862f-db6f9df19711', 'd7d40d3e-7a5d-2b36-97b3-dd11abc0e876', '742e8f17-be0a-294e-9dd3-52492d308e2b', 'b8837e41-57ec-29c6-8a7e-3cf8b52de8b6'], progress 25/248 Epoch 1
+2026-04-22 23:56:04 - INFO - videos=0000004, steps=0000022, Total Loss: 1.6556, 
+2026-04-22 23:56:04 - INFO - Training on video ['20c993b3-698f-29c5-859c-dca8ddecf220', '0cac7619-8d6f-2d13-8f36-ac562ec9a4de', '20c993c5-698f-29c5-8604-3248ede4091f', '0d7054f5-4c6e-2ab6-844f-c1328fe572bf', '0cac768c-8d6f-2d13-8cc8-7ace156fc3e7', 'bf9a3dbe-45a5-2e80-80ee-f78c2b525234'], progress 31/248 Epoch 1
+2026-04-22 23:56:16 - INFO - videos=0000005, steps=0000027, Total Loss: 1.5878, 
+2026-04-22 23:56:16 - INFO - Training on video ['55551068-36f1-29c0-8896-0fa81b7a1fe7', '283ccfed-107c-24d5-8b72-5f6004ef4f94', '68bae76e-3567-2f7c-82bd-a09641695364', '0cac761b-8d6f-2d13-8f16-23a7d73c54fe', '355465d2-d29b-29f9-9460-4c597924ac63', 'c7895f0b-339c-2d13-80e2-1d2aa04aa528'], progress 37/248 Epoch 1
+2026-04-22 23:56:30 - INFO - videos=0000006, steps=0000034, Total Loss: 1.5375, 
+2026-04-22 23:56:30 - INFO - Training on video ['c12890de-d3df-2d0d-85bf-b248e7c3431d', '355465d4-d29b-29f9-9550-e366a10d6924', 'b8837e16-57ec-29c6-89c3-0e8b7d668f56', '4138584b-a238-2435-8128-a939fb07c1c8', '095821fb-e2c2-2de1-94df-20f2cb423bcb', '355465d6-d29b-29f9-957c-e9ebbb5751ec'], progress 43/248 Epoch 1
+2026-04-22 23:56:42 - INFO - videos=0000007, steps=0000039, Total Loss: 1.4877, 
+2026-04-22 23:56:42 - INFO - Training on video ['b8837e32-57ec-29c6-893c-77fce535b159', '2451c03f-fae8-24f6-90ac-6ba38cab8c92', '352e9c48-69fb-27a7-8a35-3dbf699637c8', '10b1795b-3938-2467-88fe-b10cad8913f8', '0ad2d3a5-79e2-2212-9a9e-2502a05fa678', '0cac7627-8d6f-2d13-8eac-41764b5f2c5b'], progress 49/248 Epoch 1
+2026-04-22 23:56:52 - INFO - videos=0000008, steps=0000043, Total Loss: 1.4851, 
+2026-04-22 23:56:52 - INFO - Training on video ['8f0f1455-55de-28ce-832d-d58f1c6c398d', 'a0905fdd-66f7-2272-9cdb-89360888ea67', '09582254-e2c2-2de1-9434-162187eb819e', '77361fbe-d054-2a22-885b-a5437892d854', 'ba6fdaa0-a4c1-2dca-80a9-df196c04fcc8', '0958222d-e2c2-2de1-9732-e2fb990692ef'], progress 55/248 Epoch 1
+2026-04-22 23:57:05 - INFO - videos=0000009, steps=0000048, Total Loss: 1.4593, 
+2026-04-22 23:57:05 - INFO - Training on video ['ab835f8b-54c6-29a1-9a7a-4770a0eb74ff', 'd7d40d70-7a5d-2b36-960f-ddf3159cb360', '1776ad82-4db7-2333-89e4-d73159ac81d0', '77361fcc-d054-2a22-89ce-6bc2aa429596', 'b8837e1a-57ec-29c6-8a01-dec1dcb87460', 'd7d40d44-7a5d-2b36-96d7-23cb75af862f'], progress 61/248 Epoch 1
+2026-04-22 23:57:16 - INFO - videos=0000010, steps=0000053, Total Loss: 1.4531, 
+2026-04-22 23:57:16 - INFO - Training on video ['b05fdd96-fca0-2d4f-88c3-d9dfda85c00e', '6bde60ad-9162-246f-8cc8-71bfdd742b43', 'a644cb91-0ee5-2f66-9da1-5edabca2f13d', '2451c053-fae8-24f6-91f0-6bebca1fe741', 'b8837e1c-57ec-29c6-8900-ce1eaa76e959', '75c2598b-9ca2-2844-967d-a16c92acf4ea'], progress 67/248 Epoch 1
+2026-04-22 23:57:27 - INFO - videos=0000011, steps=0000057, Total Loss: 1.4239, 
+2026-04-22 23:57:27 - INFO - Training on video ['77361fd4-d054-2a22-88c4-b5b404f904ca', '0cac7640-8d6f-2d13-8d50-e374f145f2b6', '6bde60cf-9162-246f-8f98-6355d75494c2', '8f0f1461-55de-28ce-821c-d2eeaa217cc1', '6a36054b-fa53-2915-946e-4ec15f811f6e', 'baf67399-8e94-22f8-81b1-900b40b196d7'], progress 73/248 Epoch 1
+2026-04-22 23:57:36 - INFO - videos=0000012, steps=0000060, Total Loss: 1.4221, 
+2026-04-22 23:57:36 - INFO - Training on video ['c9fb7aa5-2a5b-2cf7-902e-42a0339c7242', '501ebf0f-a3bb-263f-867d-7c2af21b54d0', '77361fbc-d054-2a22-8bd1-20da69ee28dc', '8f0f144d-55de-28ce-8075-69a0a3b631b5', '0958224e-e2c2-2de1-943b-38e36345e2e7', '6bde60af-9162-246f-8f0e-7b3e8cb00aaf'], progress 79/248 Epoch 1
+2026-04-22 23:57:46 - INFO - videos=0000013, steps=0000063, Total Loss: 1.3930, 
+2026-04-22 23:57:46 - INFO - Training on video ['b8837e38-57ec-29c6-88a0-58602a876ed0', 'c92fb590-f771-2064-8665-19d71d08c0ef', '185d741f-3698-223c-8a4c-5e77f82f9251', 'c12890e3-d3df-2d0d-87cf-a5510bc39c3a', '2e36952b-e133-204c-911e-7644cb34e8b2', 'c7895f0d-339c-2d13-837c-6e5d8b7be7a8'], progress 85/248 Epoch 1
+2026-04-22 23:57:56 - INFO - videos=0000014, steps=0000067, Total Loss: 1.3945, 
+2026-04-22 23:57:56 - INFO - Training on video ['20c993bd-698f-29c5-8494-5556ba7d3fe9', '77361fce-d054-2a22-8bb2-a870ab051854', 'baf6738d-8e94-22f8-83db-20528ddbef86', '68bae762-3567-2f7c-80f8-2d44a8d24782', '43b8caf1-6678-2e38-9ab4-0bdde7337aac', '2e369567-e133-204c-909a-c5da44bb58df'], progress 91/248 Epoch 1
+2026-04-22 23:58:06 - INFO - videos=0000015, steps=0000070, Total Loss: 1.3976, 
+2026-04-22 23:58:06 - INFO - Training on video ['63b87cef-ef3f-28f2-87a7-81c3fffbfa2d', '54b263a3-0199-2df4-87db-40539528902d', 'b8837e28-57ec-29c6-89cf-e1768353440f', 'baf673a4-8e94-22f8-83af-b4e879365685', '1776ad80-4db7-2333-8b18-f02ef42f3569', 'c92fb5a0-f771-2064-8631-ec197369e100'], progress 97/248 Epoch 1
+2026-04-22 23:58:16 - INFO - videos=0000016, steps=0000074, Total Loss: 1.4574, 
+2026-04-22 23:58:16 - INFO - Training on video ['a0905fea-66f7-2272-9d2c-15612116fe96', 'dc42b382-8d5c-2d2a-8424-d19d7bc2eec3', '20c993b7-698f-29c5-847d-c8cb8a685f5a', '20c99397-698f-29c5-8534-5304111c28af', 'baf6739d-8e94-22f8-8147-feefe48f828b', '1d234004-e280-2b1a-8ec8-560046b9fc96'], progress 103/248 Epoch 1
+2026-04-22 23:58:28 - INFO - videos=0000017, steps=0000079, Total Loss: 1.4260, 
+2026-04-22 23:58:28 - INFO - Training on video ['82def5dc-25ba-20f9-8ba3-3bb706799abd', '422885b1-192d-25fc-868c-110216f86479', '1d234016-e280-2b1a-8c7c-ce441e1ebb0f', 'b8837e26-57ec-29c6-8912-0cf70aa80f98', '1776ad86-4db7-2333-8935-240e44ccb16d', '4d3d82a6-8cf4-2e04-828b-ceb5235b58a8'], progress 109/248 Epoch 1
+2026-04-22 23:58:38 - INFO - videos=0000018, steps=0000083, Total Loss: 1.4154, 
+2026-04-22 23:58:38 - INFO - Training on video ['d9725be3-7513-2d91-853f-22df440e48a3', 'b8837e34-57ec-29c6-8b50-775098de406a', '56d957ed-0184-2301-8f4f-616c3b537e45', '422885c3-192d-25fc-844a-645180810bfd', '6a360547-fa53-2915-9606-a90f1c737290', '2e36955d-e133-204c-90da-122ae14d42a3'], progress 115/248 Epoch 1
+2026-04-22 23:58:48 - INFO - videos=0000019, steps=0000087, Total Loss: 1.4363, 
+2026-04-22 23:58:48 - INFO - Training on video ['b8837e2e-57ec-29c6-8896-de41de986b5d', '09582223-e2c2-2de1-94b6-750684b4f80a', 'a38a57d8-8a91-2e91-9237-0f8c220feef5', 'baf0a8fb-26d4-2033-8a28-2001356bbb9a', '0cac7554-8d6f-2d13-8f1f-5f6fcf08f931', '352e9c57-69fb-27a7-8bc7-4cf12e417e21'], progress 121/248 Epoch 1
+2026-04-22 23:59:01 - INFO - videos=0000020, steps=0000093, Total Loss: 1.3859, 
+2026-04-22 23:59:01 - INFO - Training on video ['b1f23308-d255-2761-94da-981d962c6bf8', '55551077-36f1-29c0-89ec-2e7690991cb2', '0ad2d3a7-79e2-2212-9a1b-8737842a24e2', '1d23400e-e280-2b1a-8dec-67a551146c3a', 'ba6fdaa2-a4c1-2dca-81a8-2aacd785edd7', '1d234002-e280-2b1a-8c8d-6aafb5b35a24'], progress 127/248 Epoch 1
+2026-04-22 23:59:15 - INFO - videos=0000021, steps=0000096, Total Loss: 1.4101, 
+2026-04-22 23:59:15 - INFO - Training on video ['5341b7ab-8a66-2cdd-865a-c27c4263d24a', '2e36953d-e133-204c-9045-d52ab9f09dcb', '422885bf-192d-25fc-8509-1fd7def9cc19', '6bde6043-9162-246f-8e11-613aba0df55c', '6bde60cd-9162-246f-8fad-fca80b4d6ad8', '77361fb6-d054-2a22-8bc5-f4f1a2f34cfb'], progress 133/248 Epoch 1
+2026-04-22 23:59:25 - INFO - videos=0000022, steps=0000099, Total Loss: 1.4359, 
+2026-04-22 23:59:25 - INFO - Training on video ['6bde6099-9162-246f-8d20-43caaaf32911', 'ebc42044-82a4-2113-8789-1c8c8bb7cbcd', '0ad2d386-79e2-2212-9b40-43d081db442a', 'fcf66dbc-622d-291c-8481-6e8761c93e21', '0cac768a-8d6f-2d13-8dd3-3cbb7d916641', 'ab835f8e-54c6-29a1-9aeb-3973d3d59915'], progress 139/248 Epoch 1
+2026-04-22 23:59:37 - INFO - videos=0000023, steps=0000105, Total Loss: 1.3783, 
+2026-04-22 23:59:37 - INFO - Training on video ['ad408ca9-84db-2095-8afa-cc17150ea346', '09582228-e2c2-2de1-953d-f6f1ee4b3699', 'baf0a8f8-26d4-2033-8af4-9d0603924ce1', '2e36953b-e133-204c-931b-a2cf0f93fed6', '20c993cf-698f-29c5-86c7-e2ee784936a1', '20c993c7-698f-29c5-8685-0d1a2a4a3496'], progress 145/248 Epoch 1
+2026-04-22 23:59:51 - INFO - videos=0000024, steps=0000112, Total Loss: 1.3862, 
+2026-04-22 23:59:51 - INFO - Training on video ['4a9a43d8-7736-2874-86fc-098deb94c868', 'baf673a1-8e94-22f8-824b-1139a8fc8bda', '6bde6041-9162-246f-8e57-11444a314136', '9c27de56-6184-2cda-8196-591957b6387d', 'a8952595-9035-254b-8c74-9c22ced19216', '77361fc2-d054-2a22-8ae5-c56022c5e974'], progress 151/248 Epoch 1
+2026-04-23 00:00:03 - INFO - videos=0000025, steps=0000117, Total Loss: 1.5132, 
+2026-04-23 00:00:03 - INFO - Training on video ['cdcaf5b9-ddd8-2ed6-9407-e5600914b733', 'c7895f88-339c-2d13-80f8-a904e8f2fff0', '6e67e55f-1209-2cd0-8194-8c6278434c80', '422885b3-192d-25fc-84c9-9b80eea1752d', 'ba6fda9e-a4c1-2dca-8381-c08ad16a6170', '8f0f144b-55de-28ce-8053-2828b87a0cc9'], progress 157/248 Epoch 1
+2026-04-23 00:00:14 - INFO - videos=0000026, steps=0000122, Total Loss: 1.4057, 
+2026-04-23 00:00:14 - INFO - Training on video ['6bde6057-9162-246f-8d07-dfba45622e09', '095821f7-e2c2-2de1-9568-b9ce59920e29', '6bde608d-9162-246f-8dde-3f158d134d50', '0cac753c-8d6f-2d13-8e27-e0664fc33bb9', 'ae73fa17-5a60-2398-86e8-aa1145c0c9b7', 'd63767bc-3205-226c-9b7c-72e4a9c0a79f'], progress 163/248 Epoch 1
+2026-04-23 00:00:25 - INFO - videos=0000027, steps=0000126, Total Loss: 1.4451, 
+2026-04-23 00:00:25 - INFO - Training on video ['717ad1f3-b350-2996-8897-3c57a14e3d05', '0958223d-e2c2-2de1-9683-a76a4276d84c', '6a36052b-fa53-2915-94fe-f6c908e61c52', 'ab835f94-54c6-29a1-9872-210a98f12c12', 'b8837e18-57ec-29c6-8919-d767d4811461', 'd7d40d73-7a5d-2b36-9709-0be87127a141'], progress 169/248 Epoch 1
+2026-04-23 00:00:42 - INFO - videos=0000028, steps=0000136, Total Loss: 1.3734, 
+2026-04-23 00:00:42 - INFO - Training on video ['8f0f145e-55de-28ce-8203-45b4e2bb36d9', 'd9725be1-7513-2d91-8723-770169ff5b75', 'd7d40d39-7a5d-2b36-972e-a7c800ca7bbf', '6a360565-fa53-2915-974c-3a8844e1a451', 'aa202790-8bc8-2c5b-9d03-129b42efee05', 'd7d40d46-7a5d-2b36-9734-659bccb1c202'], progress 175/248 Epoch 1
+2026-04-23 00:00:53 - INFO - videos=0000029, steps=0000140, Total Loss: 1.3295, 
+2026-04-23 00:00:53 - INFO - Training on video ['bcb0fe19-4f39-2c70-9cb7-a6993671cc91', '55551079-36f1-29c0-8bcf-aa3b2450b9c5', 'a644cb93-0ee5-2f66-9efb-b16adfb14eff', 'a0905fe8-66f7-2272-9e46-073291573af6', '18d4d924-7eb5-280e-8764-f9654f215144', 'a38a57da-8a91-2e91-93eb-0b7f675da4ba'], progress 181/248 Epoch 1
+2026-04-23 00:01:03 - INFO - videos=0000030, steps=0000144, Total Loss: 1.2982, 
+2026-04-23 00:01:03 - INFO - Training on video ['dbeb4d1f-faf9-2324-98d1-605c3c0c0658', '87e6cf79-9d1a-289f-845c-abe4deb8642f', 'fcf66d88-622d-291c-871f-699b2d063630', 'ba6fda98-a4c1-2dca-8230-bce60f5a0f85', '095821f9-e2c2-2de1-9707-8f735cd1c148', 'b8837e3f-57ec-29c6-89a2-b2417e091d50'], progress 187/248 Epoch 1
+2026-04-23 00:01:16 - INFO - videos=0000031, steps=0000150, Total Loss: 1.3299, 
+2026-04-23 00:01:16 - INFO - Training on video ['09582225-e2c2-2de1-9564-f6681ef5e511', '82def5da-25ba-20f9-8810-71be905b83db', '2e369549-e133-204c-91af-a19767a23bf2', 'b8837e1f-57ec-29c6-88ad-4c19a5afbf36', 'a38a57d6-8a91-2e91-9090-e2625e960187', '8e0f1c26-9e28-2339-8799-53c13e81d9ff'], progress 193/248 Epoch 1
+2026-04-23 00:01:26 - INFO - videos=0000032, steps=0000153, Total Loss: 1.3438, 
+2026-04-23 00:01:26 - INFO - Training on video ['7ab2a9c7-ebc6-2056-8973-f34c559f7e0d', '0958222f-e2c2-2de1-94fd-986561908cee', 'baf67397-8e94-22f8-8066-c32fbe984412', '10b17967-3938-2467-88c5-a299519f9ad7', 'd7d40d40-7a5d-2b36-977c-4e35fdd5f03a', '6bde6051-9162-246f-8fa1-c88a8a60a97e'], progress 199/248 Epoch 1
+2026-04-23 00:01:40 - INFO - videos=0000033, steps=0000160, Total Loss: 1.3572, 
+2026-04-23 00:01:40 - INFO - Training on video ['6bde60cb-9162-246f-8cf5-d04f7426e56f', '0958222a-e2c2-2de1-9474-35e601b3682a', '6bde6079-9162-246f-8fad-d8f2358bd413', 'c92fb58a-f771-2064-8432-02b46f2b3e49', '6bde603f-9162-246f-8ca4-5bb5c9fe9974', 'baf67389-8e94-22f8-8055-1d869ecfede9'], progress 205/248 Epoch 1
+2026-04-23 00:01:51 - INFO - videos=0000034, steps=0000164, Total Loss: 1.3768, 
+2026-04-23 00:01:51 - INFO - Training on video ['aa20278e-8bc8-2c5b-9cfe-01db71781ed4', '63b87cf1-ef3f-28f2-871a-c1551f129ce6', '7272e189-a01b-20f6-8a2e-05b6c8395143', '6bde60b7-9162-246f-8e93-2738e71ccafd', 'ae73fa15-5a60-2398-8646-dd46c46a9a3d', '6bde6053-9162-246f-8d5d-54e5e3dd721d'], progress 211/248 Epoch 1
+2026-04-23 00:02:04 - INFO - videos=0000035, steps=0000169, Total Loss: 1.4148, 
+2026-04-23 00:02:04 - INFO - Training on video ['09582237-e2c2-2de1-9758-862dc7a3d009', 'd7d40d50-7a5d-2b36-9446-7d636174329f', '4d3d82a4-8cf4-2e04-8144-95d355266160', '0cac75af-8d6f-2d13-8f9e-ed3f62665aed', 'd7d40d75-7a5d-2b36-9746-3e807d3e7558', '6bde607b-9162-246f-8e65-76e3ef265504'], progress 217/248 Epoch 1
+2026-04-23 00:02:16 - INFO - videos=0000036, steps=0000174, Total Loss: 1.3455, 
+2026-04-23 00:02:16 - INFO - Training on video ['bcb0fe04-4f39-2c70-9f03-d0eec592de24', '8f0f1447-55de-28ce-83c5-092887498eea', '13124cad-cec3-27a6-857f-914a832a87c3', '6bde6074-9162-246f-8d34-5d8a64c07009', '6a360545-fa53-2915-9484-a3de8990a423', '6a36052d-fa53-2915-9764-30d81b2cc2b5'], progress 223/248 Epoch 1
+2026-04-23 00:02:27 - INFO - videos=0000037, steps=0000178, Total Loss: 1.3161, 
+2026-04-23 00:02:27 - INFO - Training on video ['6bde6055-9162-246f-8f44-e3efc21c9e14', '77361fd0-d054-2a22-8b5a-9d2acada2031', 'c7895f09-339c-2d13-830d-e150ff0df2b3', '6a36052f-fa53-2915-9400-831b60c63077', '1776ad88-4db7-2333-887f-8be533122e06', '5341b7a5-8a66-2cdd-8751-70b98263cb8d'], progress 229/248 Epoch 1
+2026-04-23 00:02:36 - INFO - videos=0000038, steps=0000180, Total Loss: 1.3722, 
+2026-04-23 00:02:36 - INFO - Training on video ['d7d40d37-7a5d-2b36-97cc-108f3c8e07f9', 'd7d40d4e-7a5d-2b36-97e7-34324c52ac42', '8e0f1c28-9e28-2339-8584-ff06ff93c341', '6bde6083-9162-246f-8c9c-e170212059b2', '6a36054d-fa53-2915-94a6-7e44f4f7a6cf', 'a8952593-9035-254b-8f40-bc82e6bcbbb1'], progress 235/248 Epoch 1
+2026-04-23 00:02:46 - INFO - videos=0000039, steps=0000183, Total Loss: 1.4170, 
+2026-04-23 00:02:46 - INFO - Training on video ['fcf66d8a-622d-291c-8429-0e1109c6bb26', '75c25973-9ca2-2844-96f4-90cd531364ac', '2451c041-fae8-24f6-9213-b8b6af8d86c1', 'ab835f92-54c6-29a1-99eb-63169a21d553', 'baf673a6-8e94-22f8-8047-575f7de04f21', 'baf6739f-8e94-22f8-82fd-b0cc4f4da8ae'], progress 241/248 Epoch 1
+2026-04-23 00:02:57 - INFO - videos=0000040, steps=0000189, Total Loss: 1.3074, 
+2026-04-23 00:02:57 - INFO - Training on video ['b8837e21-57ec-29c6-891b-6b94255462c3', '569d8f03-72aa-2f24-882f-1ce08cc072e6', '0cac755e-8d6f-2d13-8c6a-c0979ca34a4f', '2a7f9476-080c-26f9-86e9-c7ce1c76fc07', '8f0f1463-55de-28ce-80e5-d3294f7795ba', '6a360567-fa53-2915-9617-da8aa432752d'], progress 247/248 Epoch 1
+2026-04-23 00:03:09 - INFO - videos=0000041, steps=0000194, Total Loss: 1.3227, 
+2026-04-23 00:03:09 - INFO - Training on video ['fcf66db0-622d-291c-8734-2a41fae7deb2', 'baf673a8-8e94-22f8-837d-d39420725d90'], progress 253/248 Epoch 1
+2026-04-23 00:03:17 - INFO - videos=0000042, steps=0000197, Total Loss: 1.3179, 
+2026-04-23 00:03:17 - INFO - Training on video ['d7d40d44-7a5d-2b36-96d7-23cb75af862f', 'baf67389-8e94-22f8-8055-1d869ecfede9', 'fcf66d88-622d-291c-871f-699b2d063630', '095821f9-e2c2-2de1-9707-8f735cd1c148', 'd7d40d75-7a5d-2b36-9746-3e807d3e7558', 'baf673a4-8e94-22f8-83af-b4e879365685'], progress 7/248 Epoch 2
+2026-04-23 00:03:30 - INFO - videos=0000043, steps=0000203, Total Loss: 1.3231, 
+2026-04-23 00:03:30 - INFO - Training on video ['422885b3-192d-25fc-84c9-9b80eea1752d', '6bde607b-9162-246f-8e65-76e3ef265504', '77361fbc-d054-2a22-8bd1-20da69ee28dc', 'ba6fda98-a4c1-2dca-8230-bce60f5a0f85', '0cac755e-8d6f-2d13-8c6a-c0979ca34a4f', 'b8837e1a-57ec-29c6-8a01-dec1dcb87460'], progress 13/248 Epoch 2
+2026-04-23 00:03:41 - INFO - videos=0000044, steps=0000207, Total Loss: 1.3456, 
+2026-04-23 00:03:41 - INFO - Training on video ['0cac768c-8d6f-2d13-8cc8-7ace156fc3e7', '0cac753c-8d6f-2d13-8e27-e0664fc33bb9', '75c2598b-9ca2-2844-967d-a16c92acf4ea', '569d8f03-72aa-2f24-882f-1ce08cc072e6', '8f0f144b-55de-28ce-8053-2828b87a0cc9', '2a7f9476-080c-26f9-86e9-c7ce1c76fc07'], progress 19/248 Epoch 2
+2026-04-23 00:03:52 - INFO - videos=0000045, steps=0000212, Total Loss: 1.3206, 
+2026-04-23 00:03:52 - INFO - Training on video ['b8837e28-57ec-29c6-89cf-e1768353440f', '5341b7a5-8a66-2cdd-8751-70b98263cb8d', '6bde6099-9162-246f-8d20-43caaaf32911', '77361fbe-d054-2a22-885b-a5437892d854', '355465d4-d29b-29f9-9550-e366a10d6924', '6bde60cf-9162-246f-8f98-6355d75494c2'], progress 25/248 Epoch 2
+2026-04-23 00:04:02 - INFO - videos=0000046, steps=0000215, Total Loss: 1.3395, 
+2026-04-23 00:04:02 - INFO - Training on video ['55551077-36f1-29c0-89ec-2e7690991cb2', '80b85891-4a8d-222f-85d0-2b8bf16d79a8', '1776ad80-4db7-2333-8b18-f02ef42f3569', 'bf9a3dbe-45a5-2e80-80ee-f78c2b525234', '82def5da-25ba-20f9-8810-71be905b83db', '422885c3-192d-25fc-844a-645180810bfd'], progress 31/248 Epoch 2
+2026-04-23 00:04:12 - INFO - videos=0000047, steps=0000220, Total Loss: 1.3535, 
+2026-04-23 00:04:12 - INFO - Training on video ['d7d40d39-7a5d-2b36-972e-a7c800ca7bbf', 'a38a57da-8a91-2e91-93eb-0b7f675da4ba', '355465d6-d29b-29f9-957c-e9ebbb5751ec', 'ae73fa15-5a60-2398-8646-dd46c46a9a3d', '2451c041-fae8-24f6-9213-b8b6af8d86c1', '1d234002-e280-2b1a-8c8d-6aafb5b35a24'], progress 37/248 Epoch 2
+2026-04-23 00:04:23 - INFO - videos=0000048, steps=0000224, Total Loss: 1.3393, 
+2026-04-23 00:04:23 - INFO - Training on video ['d7d40d3e-7a5d-2b36-97b3-dd11abc0e876', '6bde6083-9162-246f-8c9c-e170212059b2', '09582223-e2c2-2de1-94b6-750684b4f80a', '10b1795b-3938-2467-88fe-b10cad8913f8', '43b8caf1-6678-2e38-9ab4-0bdde7337aac', 'c7895f88-339c-2d13-80f8-a904e8f2fff0'], progress 43/248 Epoch 2
+2026-04-23 00:04:32 - INFO - videos=0000049, steps=0000227, Total Loss: 1.2807, 
+2026-04-23 00:04:32 - INFO - Training on video ['c9fb7aa5-2a5b-2cf7-902e-42a0339c7242', 'b8837e34-57ec-29c6-8b50-775098de406a', 'dbeb4d1f-faf9-2324-98d1-605c3c0c0658', '2e369567-e133-204c-909a-c5da44bb58df', 'c92fb590-f771-2064-8665-19d71d08c0ef', '0958222d-e2c2-2de1-9732-e2fb990692ef'], progress 49/248 Epoch 2
+2026-04-23 00:04:42 - INFO - videos=0000050, steps=0000230, Total Loss: 1.3141, 
+2026-04-23 00:04:42 - INFO - Training on video ['2e36952b-e133-204c-911e-7644cb34e8b2', 'bcb0fe19-4f39-2c70-9cb7-a6993671cc91', 'd7d40d46-7a5d-2b36-9734-659bccb1c202', '13124cad-cec3-27a6-857f-914a832a87c3', '20c993b7-698f-29c5-847d-c8cb8a685f5a', '742e8f17-be0a-294e-9dd3-52492d308e2b'], progress 55/248 Epoch 2
+2026-04-23 00:04:53 - INFO - videos=0000051, steps=0000234, Total Loss: 1.3019, 
+2026-04-23 00:04:53 - INFO - Training on video ['095821f7-e2c2-2de1-9568-b9ce59920e29', 'a0905fe8-66f7-2272-9e46-073291573af6', '09582254-e2c2-2de1-9434-162187eb819e', '77361fcc-d054-2a22-89ce-6bc2aa429596', '6bde603f-9162-246f-8ca4-5bb5c9fe9974', 'ba6fda9e-a4c1-2dca-8381-c08ad16a6170'], progress 61/248 Epoch 2
+2026-04-23 00:05:05 - INFO - videos=0000052, steps=0000239, Total Loss: 1.3420, 
+2026-04-23 00:05:05 - INFO - Training on video ['0ad2d386-79e2-2212-9b40-43d081db442a', 'd7d40d40-7a5d-2b36-977c-4e35fdd5f03a', '77361fd0-d054-2a22-8b5a-9d2acada2031', '77361fb6-d054-2a22-8bc5-f4f1a2f34cfb', 'b1f23308-d255-2761-94da-981d962c6bf8', '6bde60bc-9162-246f-8e50-ca5054c79322'], progress 67/248 Epoch 2
+2026-04-23 00:05:15 - INFO - videos=0000053, steps=0000242, Total Loss: 1.3269, 
+2026-04-23 00:05:15 - INFO - Training on video ['8e0f1c26-9e28-2339-8799-53c13e81d9ff', '422885ad-192d-25fc-8631-c3a978a9d3d4', 'b8837e1f-57ec-29c6-88ad-4c19a5afbf36', 'b8837e3f-57ec-29c6-89a2-b2417e091d50', '0cac768a-8d6f-2d13-8dd3-3cbb7d916641', 'a0905fea-66f7-2272-9d2c-15612116fe96'], progress 73/248 Epoch 2
+2026-04-23 00:05:24 - INFO - videos=0000054, steps=0000244, Total Loss: 1.3608, 
+2026-04-23 00:05:24 - INFO - Training on video ['9c27de56-6184-2cda-8196-591957b6387d', '0cac75af-8d6f-2d13-8f9e-ed3f62665aed', '1776ad88-4db7-2333-887f-8be533122e06', '6bde607d-9162-246f-8f84-98cf7ac2374c', 'c92fb58a-f771-2064-8432-02b46f2b3e49', 'a38a57d6-8a91-2e91-9090-e2625e960187'], progress 79/248 Epoch 2
+2026-04-23 00:05:33 - INFO - videos=0000055, steps=0000247, Total Loss: 1.3515, 
+2026-04-23 00:05:33 - INFO - Training on video ['fcf66db4-622d-291c-8720-d0a6bbd17846', '8f0f1447-55de-28ce-83c5-092887498eea', '0958223d-e2c2-2de1-9683-a76a4276d84c', '20c9939b-698f-29c5-85a4-68c286bd7053', 'c7895f1f-339c-2d13-8172-b32de97f8cce', '68bae76e-3567-2f7c-82bd-a09641695364'], progress 85/248 Epoch 2
+2026-04-23 00:05:52 - INFO - videos=0000056, steps=0000257, Total Loss: 1.4058, 
+2026-04-23 00:05:52 - INFO - Training on video ['a644cb91-0ee5-2f66-9da1-5edabca2f13d', 'b8837e1c-57ec-29c6-8900-ce1eaa76e959', 'baf6739d-8e94-22f8-8147-feefe48f828b', 'c12890e3-d3df-2d0d-87cf-a5510bc39c3a', '68bae762-3567-2f7c-80f8-2d44a8d24782', '54b263a3-0199-2df4-87db-40539528902d'], progress 91/248 Epoch 2
+2026-04-23 00:06:03 - INFO - videos=0000057, steps=0000262, Total Loss: 1.3080, 
+2026-04-23 00:06:03 - INFO - Training on video ['2451c03f-fae8-24f6-90ac-6ba38cab8c92', '20c993c5-698f-29c5-8604-3248ede4091f', '6bde60af-9162-246f-8f0e-7b3e8cb00aaf', '5341b7ab-8a66-2cdd-865a-c27c4263d24a', '355465d2-d29b-29f9-9460-4c597924ac63', 'd7d40d50-7a5d-2b36-9446-7d636174329f'], progress 97/248 Epoch 2
+2026-04-23 00:06:14 - INFO - videos=0000058, steps=0000266, Total Loss: 1.3385, 
+2026-04-23 00:06:14 - INFO - Training on video ['baf673a6-8e94-22f8-8047-575f7de04f21', 'c92fb5a0-f771-2064-8631-ec197369e100', 'baf67397-8e94-22f8-8066-c32fbe984412', '6a36052b-fa53-2915-94fe-f6c908e61c52', '2e36953d-e133-204c-9045-d52ab9f09dcb', '6bde608d-9162-246f-8dde-3f158d134d50'], progress 103/248 Epoch 2
+2026-04-23 00:06:23 - INFO - videos=0000059, steps=0000269, Total Loss: 1.3981, 
+2026-04-23 00:06:23 - INFO - Training on video ['fcf66d8a-622d-291c-8429-0e1109c6bb26', '20c993bd-698f-29c5-8494-5556ba7d3fe9', '09582237-e2c2-2de1-9758-862dc7a3d009', '6a36054b-fa53-2915-946e-4ec15f811f6e', '6bde60cb-9162-246f-8cf5-d04f7426e56f', '77361fce-d054-2a22-8bb2-a870ab051854'], progress 109/248 Epoch 2
+2026-04-23 00:06:35 - INFO - videos=0000060, steps=0000274, Total Loss: 1.3161, 
+2026-04-23 00:06:35 - INFO - Training on video ['bcb0fe29-4f39-2c70-9f18-79507a4e9a30', '6a36054d-fa53-2915-94a6-7e44f4f7a6cf', 'c7895f0d-339c-2d13-837c-6e5d8b7be7a8', '6bde6057-9162-246f-8d07-dfba45622e09', 'b8837e38-57ec-29c6-88a0-58602a876ed0', 'b8837e16-57ec-29c6-89c3-0e8b7d668f56'], progress 115/248 Epoch 2
+2026-04-23 00:06:44 - INFO - videos=0000061, steps=0000277, Total Loss: 1.3629, 
+2026-04-23 00:06:44 - INFO - Training on video ['b8837e21-57ec-29c6-891b-6b94255462c3', '8f0f1461-55de-28ce-821c-d2eeaa217cc1', '1776ad86-4db7-2333-8935-240e44ccb16d', '1776ad82-4db7-2333-89e4-d73159ac81d0', 'cdcaf5b9-ddd8-2ed6-9407-e5600914b733', 'c12890de-d3df-2d0d-85bf-b248e7c3431d'], progress 121/248 Epoch 2
+2026-04-23 00:06:56 - INFO - videos=0000062, steps=0000282, Total Loss: 1.3378, 
+2026-04-23 00:06:56 - INFO - Training on video ['d63767bc-3205-226c-9b7c-72e4a9c0a79f', '283ccfed-107c-24d5-8b72-5f6004ef4f94', '87e6cf79-9d1a-289f-845c-abe4deb8642f', '10b1794e-3938-2467-89a7-ebc89e84cf88', '6a360547-fa53-2915-9606-a90f1c737290', '352e9c48-69fb-27a7-8a35-3dbf699637c8'], progress 127/248 Epoch 2
+2026-04-23 00:07:10 - INFO - videos=0000063, steps=0000289, Total Loss: 1.3276, 
+2026-04-23 00:07:10 - INFO - Training on video ['ab835f92-54c6-29a1-99eb-63169a21d553', '09582228-e2c2-2de1-953d-f6f1ee4b3699', '2e36953b-e133-204c-931b-a2cf0f93fed6', '6bde6043-9162-246f-8e11-613aba0df55c', '10b17967-3938-2467-88c5-a299519f9ad7', '63b87cf1-ef3f-28f2-871a-c1551f129ce6'], progress 133/248 Epoch 2
+2026-04-23 00:07:23 - INFO - videos=0000064, steps=0000295, Total Loss: 1.3915, 
+2026-04-23 00:07:23 - INFO - Training on video ['6bde60b7-9162-246f-8e93-2738e71ccafd', '6bde6074-9162-246f-8d34-5d8a64c07009', 'c12890dc-d3df-2d0d-87b5-90e9596c3de4', '43b8caf3-6678-2e38-99da-2aeb70cf8e95', '20c993c7-698f-29c5-8685-0d1a2a4a3496', 'baf0a8fb-26d4-2033-8a28-2001356bbb9a'], progress 139/248 Epoch 2
+2026-04-23 00:07:36 - INFO - videos=0000065, steps=0000301, Total Loss: 1.2627, 
+2026-04-23 00:07:36 - INFO - Training on video ['0958224e-e2c2-2de1-943b-38e36345e2e7', '0cac761b-8d6f-2d13-8f16-23a7d73c54fe', '1d234004-e280-2b1a-8ec8-560046b9fc96', '2e369549-e133-204c-91af-a19767a23bf2', '6bde60ad-9162-246f-8cc8-71bfdd742b43', '6bde6041-9162-246f-8e57-11444a314136'], progress 145/248 Epoch 2
+2026-04-23 00:07:46 - INFO - videos=0000066, steps=0000304, Total Loss: 1.3522, 
+2026-04-23 00:07:46 - INFO - Training on video ['ba6fdaa0-a4c1-2dca-80a9-df196c04fcc8', '77361fd4-d054-2a22-88c4-b5b404f904ca', 'a8952593-9035-254b-8f40-bc82e6bcbbb1', 'ebc42044-82a4-2113-8789-1c8c8bb7cbcd', '4a9a43d8-7736-2874-86fc-098deb94c868', '4d3d82a6-8cf4-2e04-828b-ceb5235b58a8'], progress 151/248 Epoch 2
+2026-04-23 00:07:56 - INFO - videos=0000067, steps=0000307, Total Loss: 1.3667, 
+2026-04-23 00:07:56 - INFO - Training on video ['717ad1f3-b350-2996-8897-3c57a14e3d05', '0ad2d3a3-79e2-2212-9a51-9094be707ec2', '55551079-36f1-29c0-8bcf-aa3b2450b9c5', '4d3d82a4-8cf4-2e04-8144-95d355266160', 'baf673a1-8e94-22f8-824b-1139a8fc8bda', '55551068-36f1-29c0-8896-0fa81b7a1fe7'], progress 157/248 Epoch 2
+2026-04-23 00:08:07 - INFO - videos=0000068, steps=0000312, Total Loss: 1.0936, 
+2026-04-23 00:08:07 - INFO - Training on video ['d7d40d37-7a5d-2b36-97cc-108f3c8e07f9', '6bde6079-9162-246f-8fad-d8f2358bd413', 'ae73fa17-5a60-2398-86e8-aa1145c0c9b7', '6e67e55f-1209-2cd0-8194-8c6278434c80', '55551075-36f1-29c0-8b64-97a4e71b90ba', '0cac7627-8d6f-2d13-8eac-41764b5f2c5b'], progress 163/248 Epoch 2
+2026-04-23 00:08:16 - INFO - videos=0000069, steps=0000315, Total Loss: 1.3055, 
+2026-04-23 00:08:16 - INFO - Training on video ['c12890da-d3df-2d0d-862f-db6f9df19711', '6bde60cd-9162-246f-8fad-fca80b4d6ad8', '6a360565-fa53-2915-974c-3a8844e1a451', '095821fb-e2c2-2de1-94df-20f2cb423bcb', 'fcf66dbc-622d-291c-8481-6e8761c93e21', '422885bf-192d-25fc-8509-1fd7def9cc19'], progress 169/248 Epoch 2
+2026-04-23 00:08:30 - INFO - videos=0000070, steps=0000322, Total Loss: 1.3198, 
+2026-04-23 00:08:30 - INFO - Training on video ['0ad2d3a7-79e2-2212-9a1b-8737842a24e2', '77361fc2-d054-2a22-8ae5-c56022c5e974', '6bde6053-9162-246f-8d5d-54e5e3dd721d', 'a644cb93-0ee5-2f66-9efb-b16adfb14eff', '185d741f-3698-223c-8a4c-5e77f82f9251', '0958222f-e2c2-2de1-94fd-986561908cee'], progress 175/248 Epoch 2
+2026-04-23 00:08:43 - INFO - videos=0000071, steps=0000329, Total Loss: 1.3341, 
+2026-04-23 00:08:43 - INFO - Training on video ['6a36052f-fa53-2915-9400-831b60c63077', 'a8952595-9035-254b-8c74-9c22ced19216', 'ddc737af-765b-241a-9ea5-0a02dc0876f2', 'd7d40d70-7a5d-2b36-960f-ddf3159cb360', '8f0f144d-55de-28ce-8075-69a0a3b631b5', 'c7895f09-339c-2d13-830d-e150ff0df2b3'], progress 181/248 Epoch 2
+2026-04-23 00:08:53 - INFO - videos=0000072, steps=0000333, Total Loss: 1.2915, 
+2026-04-23 00:08:53 - INFO - Training on video ['4138584b-a238-2435-8128-a939fb07c1c8', '6bde6051-9162-246f-8fa1-c88a8a60a97e', 'd9725be1-7513-2d91-8723-770169ff5b75', '20c993cf-698f-29c5-86c7-e2ee784936a1', '18d4d924-7eb5-280e-8764-f9654f215144', 'bcb0fe04-4f39-2c70-9f03-d0eec592de24'], progress 187/248 Epoch 2
+2026-04-23 00:09:04 - INFO - videos=0000073, steps=0000337, Total Loss: 1.3369, 
+2026-04-23 00:09:04 - INFO - Training on video ['501ebf0f-a3bb-263f-867d-7c2af21b54d0', 'a38a57d8-8a91-2e91-9237-0f8c220feef5', '0cac7640-8d6f-2d13-8d50-e374f145f2b6', '20c99397-698f-29c5-8534-5304111c28af', 'baf67395-8e94-22f8-8100-9c9d7ce1c2b7', 'dc42b382-8d5c-2d2a-8424-d19d7bc2eec3'], progress 193/248 Epoch 2
+2026-04-23 00:09:16 - INFO - videos=0000074, steps=0000343, Total Loss: 1.2545, 
+2026-04-23 00:09:16 - INFO - Training on video ['0958222a-e2c2-2de1-9474-35e601b3682a', 'd7d40d4e-7a5d-2b36-97e7-34324c52ac42', '82def5dc-25ba-20f9-8ba3-3bb706799abd', 'ab835f8b-54c6-29a1-9a7a-4770a0eb74ff', '1d23400e-e280-2b1a-8dec-67a551146c3a', 'ba6fdaa2-a4c1-2dca-81a8-2aacd785edd7'], progress 199/248 Epoch 2
+2026-04-23 00:09:27 - INFO - videos=0000075, steps=0000348, Total Loss: 1.3307, 
+2026-04-23 00:09:27 - INFO - Training on video ['fcf66db0-622d-291c-8734-2a41fae7deb2', 'b8837e32-57ec-29c6-893c-77fce535b159', 'b05fdd96-fca0-2d4f-88c3-d9dfda85c00e', '7ab2a9c7-ebc6-2056-8973-f34c559f7e0d', 'b8837e41-57ec-29c6-8a7e-3cf8b52de8b6', '8eabc453-5af7-2f32-859d-405eb6a2e0d0'], progress 205/248 Epoch 2
+2026-04-23 00:09:36 - INFO - videos=0000076, steps=0000351, Total Loss: 1.3047, 
+2026-04-23 00:09:36 - INFO - Training on video ['ad408ca9-84db-2095-8afa-cc17150ea346', 'b8837e18-57ec-29c6-8919-d767d4811461', '2e369525-e133-204c-93ab-2b23ce5ef16e', '8e0f1c28-9e28-2339-8584-ff06ff93c341', 'baf0a8f8-26d4-2033-8af4-9d0603924ce1', 'baf673a8-8e94-22f8-837d-d39420725d90'], progress 211/248 Epoch 2
+2026-04-23 00:09:50 - INFO - videos=0000077, steps=0000358, Total Loss: 1.3542, 
+2026-04-23 00:09:50 - INFO - Training on video ['2e36955d-e133-204c-90da-122ae14d42a3', 'b8837e3a-57ec-29c6-8b54-d440ca79a11f', '6bde6055-9162-246f-8f44-e3efc21c9e14', '0cac7554-8d6f-2d13-8f1f-5f6fcf08f931', 'baf67399-8e94-22f8-81b1-900b40b196d7', '0ad2d3a5-79e2-2212-9a9e-2502a05fa678'], progress 217/248 Epoch 2
+2026-04-23 00:10:04 - INFO - videos=0000078, steps=0000364, Total Loss: 1.3021, 
+2026-04-23 00:10:04 - INFO - Training on video ['baf6739f-8e94-22f8-82fd-b0cc4f4da8ae', 'c7895f0b-339c-2d13-80e2-1d2aa04aa528', 'b8837e2e-57ec-29c6-8896-de41de986b5d', 'ab835f8e-54c6-29a1-9aeb-3973d3d59915', '6a360567-fa53-2915-9617-da8aa432752d', 'a0905fdd-66f7-2272-9cdb-89360888ea67'], progress 223/248 Epoch 2
+2026-04-23 00:10:16 - INFO - videos=0000079, steps=0000370, Total Loss: 1.3269, 
+2026-04-23 00:10:16 - INFO - Training on video ['2451c053-fae8-24f6-91f0-6bebca1fe741', '0d7054f5-4c6e-2ab6-844f-c1328fe572bf', '6a360545-fa53-2915-9484-a3de8990a423', 'aa20278e-8bc8-2c5b-9cfe-01db71781ed4', 'baf6738d-8e94-22f8-83db-20528ddbef86', '75c25973-9ca2-2844-96f4-90cd531364ac'], progress 229/248 Epoch 2
+2026-04-23 00:10:28 - INFO - videos=0000080, steps=0000375, Total Loss: 1.2853, 
+2026-04-23 00:10:28 - INFO - Training on video ['422885b1-192d-25fc-868c-110216f86479', 'baf6738b-8e94-22f8-8085-24c4e5ef5220', '0cac7619-8d6f-2d13-8f36-ac562ec9a4de', 'ab835f94-54c6-29a1-9872-210a98f12c12', 'd7d40d73-7a5d-2b36-9709-0be87127a141', 'aa202790-8bc8-2c5b-9d03-129b42efee05'], progress 235/248 Epoch 2
+2026-04-23 00:10:40 - INFO - videos=0000081, steps=0000380, Total Loss: 1.3394, 
+2026-04-23 00:10:40 - INFO - Training on video ['a0906008-66f7-2272-9e70-748b317145dd', '09582225-e2c2-2de1-9564-f6681ef5e511', '6a36052d-fa53-2915-9764-30d81b2cc2b5', '352e9c57-69fb-27a7-8bc7-4cf12e417e21', 'b8837e26-57ec-29c6-8912-0cf70aa80f98', 'd9725be3-7513-2d91-853f-22df440e48a3'], progress 241/248 Epoch 2
+2026-04-23 00:10:50 - INFO - videos=0000082, steps=0000384, Total Loss: 1.3371, 
+2026-04-23 00:10:50 - INFO - Training on video ['63b87cef-ef3f-28f2-87a7-81c3fffbfa2d', '56d957ed-0184-2301-8f4f-616c3b537e45', '8f0f145e-55de-28ce-8203-45b4e2bb36d9', '8f0f1463-55de-28ce-80e5-d3294f7795ba', '20c993b3-698f-29c5-859c-dca8ddecf220', '8f0f1455-55de-28ce-832d-d58f1c6c398d'], progress 247/248 Epoch 2
+2026-04-23 00:11:00 - INFO - videos=0000083, steps=0000387, Total Loss: 1.3478, 
+2026-04-23 00:11:00 - INFO - Training on video ['1d234016-e280-2b1a-8c7c-ce441e1ebb0f', '7272e189-a01b-20f6-8a2e-05b6c8395143'], progress 253/248 Epoch 2
+2026-04-23 00:11:07 - INFO - videos=0000084, steps=0000390, Total Loss: 1.3738, 
+2026-04-23 00:11:07 - INFO - Training on video ['355465d4-d29b-29f9-9550-e366a10d6924', 'baf6738d-8e94-22f8-83db-20528ddbef86', 'd7d40d75-7a5d-2b36-9746-3e807d3e7558', '87e6cf79-9d1a-289f-845c-abe4deb8642f', '1776ad88-4db7-2333-887f-8be533122e06', '422885b1-192d-25fc-868c-110216f86479'], progress 7/248 Epoch 3
+2026-04-23 00:11:18 - INFO - videos=0000085, steps=0000394, Total Loss: 1.3143, 
+2026-04-23 00:11:18 - INFO - Training on video ['6a36054d-fa53-2915-94a6-7e44f4f7a6cf', 'b8837e41-57ec-29c6-8a7e-3cf8b52de8b6', '20c993cf-698f-29c5-86c7-e2ee784936a1', '6bde603f-9162-246f-8ca4-5bb5c9fe9974', '095821f9-e2c2-2de1-9707-8f735cd1c148', 'c7895f0b-339c-2d13-80e2-1d2aa04aa528'], progress 13/248 Epoch 3
+2026-04-23 00:11:30 - INFO - videos=0000086, steps=0000400, Total Loss: 1.2860, 
+2026-04-23 00:11:30 - INFO - Training on video ['8f0f144b-55de-28ce-8053-2828b87a0cc9', '0ad2d3a3-79e2-2212-9a51-9094be707ec2', 'baf673a1-8e94-22f8-824b-1139a8fc8bda', '422885ad-192d-25fc-8631-c3a978a9d3d4', '569d8f03-72aa-2f24-882f-1ce08cc072e6', 'aa20278e-8bc8-2c5b-9cfe-01db71781ed4'], progress 19/248 Epoch 3
+2026-04-23 00:11:41 - INFO - videos=0000087, steps=0000405, Total Loss: 1.2742, 
+2026-04-23 00:11:41 - INFO - Training on video ['8f0f1461-55de-28ce-821c-d2eeaa217cc1', '0cac753c-8d6f-2d13-8e27-e0664fc33bb9', '82def5da-25ba-20f9-8810-71be905b83db', '09582228-e2c2-2de1-953d-f6f1ee4b3699', '0cac7627-8d6f-2d13-8eac-41764b5f2c5b', 'd9725be1-7513-2d91-8723-770169ff5b75'], progress 25/248 Epoch 3
+2026-04-23 00:11:53 - INFO - videos=0000088, steps=0000409, Total Loss: 1.2856, 
+2026-04-23 00:11:53 - INFO - Training on video ['8f0f1455-55de-28ce-832d-d58f1c6c398d', 'b05fdd96-fca0-2d4f-88c3-d9dfda85c00e', 'baf67395-8e94-22f8-8100-9c9d7ce1c2b7', 'c12890dc-d3df-2d0d-87b5-90e9596c3de4', 'ba6fdaa2-a4c1-2dca-81a8-2aacd785edd7', '352e9c48-69fb-27a7-8a35-3dbf699637c8'], progress 31/248 Epoch 3
+2026-04-23 00:12:06 - INFO - videos=0000089, steps=0000415, Total Loss: 1.2717, 
+2026-04-23 00:12:06 - INFO - Training on video ['2451c03f-fae8-24f6-90ac-6ba38cab8c92', 'c92fb590-f771-2064-8665-19d71d08c0ef', 'b8837e38-57ec-29c6-88a0-58602a876ed0', '6bde6055-9162-246f-8f44-e3efc21c9e14', 'baf673a4-8e94-22f8-83af-b4e879365685', 'c7895f88-339c-2d13-80f8-a904e8f2fff0'], progress 37/248 Epoch 3
+2026-04-23 00:12:16 - INFO - videos=0000090, steps=0000419, Total Loss: 1.0184, 
+2026-04-23 00:12:16 - INFO - Training on video ['355465d2-d29b-29f9-9460-4c597924ac63', '6bde60ad-9162-246f-8cc8-71bfdd742b43', 'ba6fdaa0-a4c1-2dca-80a9-df196c04fcc8', 'a0905fdd-66f7-2272-9cdb-89360888ea67', '8e0f1c28-9e28-2339-8584-ff06ff93c341', '10b1795b-3938-2467-88fe-b10cad8913f8'], progress 43/248 Epoch 3
+2026-04-23 00:12:25 - INFO - videos=0000091, steps=0000421, Total Loss: 1.2542, 
+2026-04-23 00:12:25 - INFO - Training on video ['d63767bc-3205-226c-9b7c-72e4a9c0a79f', '6a360565-fa53-2915-974c-3a8844e1a451', '8f0f1463-55de-28ce-80e5-d3294f7795ba', '80b85891-4a8d-222f-85d0-2b8bf16d79a8', '0ad2d3a7-79e2-2212-9a1b-8737842a24e2', '6a360567-fa53-2915-9617-da8aa432752d'], progress 49/248 Epoch 3
+2026-04-23 00:12:37 - INFO - videos=0000092, steps=0000426, Total Loss: 1.3535, 
+2026-04-23 00:12:37 - INFO - Training on video ['d7d40d70-7a5d-2b36-960f-ddf3159cb360', '55551077-36f1-29c0-89ec-2e7690991cb2', 'fcf66db0-622d-291c-8734-2a41fae7deb2', 'a0905fe8-66f7-2272-9e46-073291573af6', 'ddc737af-765b-241a-9ea5-0a02dc0876f2', 'c12890e3-d3df-2d0d-87cf-a5510bc39c3a'], progress 55/248 Epoch 3
+2026-04-23 00:12:47 - INFO - videos=0000093, steps=0000430, Total Loss: 1.3372, 
+2026-04-23 00:12:47 - INFO - Training on video ['d7d40d4e-7a5d-2b36-97e7-34324c52ac42', '0cac761b-8d6f-2d13-8f16-23a7d73c54fe', '75c2598b-9ca2-2844-967d-a16c92acf4ea', 'ab835f94-54c6-29a1-9872-210a98f12c12', '13124cad-cec3-27a6-857f-914a832a87c3', '6bde608d-9162-246f-8dde-3f158d134d50'], progress 61/248 Epoch 3
+2026-04-23 00:12:58 - INFO - videos=0000094, steps=0000434, Total Loss: 1.3492, 
+2026-04-23 00:12:58 - INFO - Training on video ['b8837e1f-57ec-29c6-88ad-4c19a5afbf36', '0958222d-e2c2-2de1-9732-e2fb990692ef', '6a360547-fa53-2915-9606-a90f1c737290', 'fcf66dbc-622d-291c-8481-6e8761c93e21', 'a0905fea-66f7-2272-9d2c-15612116fe96', '09582223-e2c2-2de1-94b6-750684b4f80a'], progress 67/248 Epoch 3
+2026-04-23 00:13:09 - INFO - videos=0000095, steps=0000437, Total Loss: 1.3352, 
+2026-04-23 00:13:09 - INFO - Training on video ['6a360545-fa53-2915-9484-a3de8990a423', 'baf0a8f8-26d4-2033-8af4-9d0603924ce1', 'd7d40d40-7a5d-2b36-977c-4e35fdd5f03a', 'd7d40d73-7a5d-2b36-9709-0be87127a141', 'fcf66d88-622d-291c-871f-699b2d063630', '0cac7554-8d6f-2d13-8f1f-5f6fcf08f931'], progress 73/248 Epoch 3
+2026-04-23 00:13:23 - INFO - videos=0000096, steps=0000444, Total Loss: 1.3456, 
+2026-04-23 00:13:23 - INFO - Training on video ['b8837e32-57ec-29c6-893c-77fce535b159', '1776ad80-4db7-2333-8b18-f02ef42f3569', '6bde607b-9162-246f-8e65-76e3ef265504', '2e36953d-e133-204c-9045-d52ab9f09dcb', 'ba6fda9e-a4c1-2dca-8381-c08ad16a6170', '54b263a3-0199-2df4-87db-40539528902d'], progress 79/248 Epoch 3
+2026-04-23 00:13:33 - INFO - videos=0000097, steps=0000448, Total Loss: 1.2405, 
+2026-04-23 00:13:33 - INFO - Training on video ['0d7054f5-4c6e-2ab6-844f-c1328fe572bf', '20c993b7-698f-29c5-847d-c8cb8a685f5a', 'baf6738b-8e94-22f8-8085-24c4e5ef5220', '77361fbc-d054-2a22-8bd1-20da69ee28dc', 'bcb0fe04-4f39-2c70-9f03-d0eec592de24', 'baf6739d-8e94-22f8-8147-feefe48f828b'], progress 85/248 Epoch 3
+2026-04-23 00:13:45 - INFO - videos=0000098, steps=0000453, Total Loss: 1.2781, 
+2026-04-23 00:13:45 - INFO - Training on video ['c7895f09-339c-2d13-830d-e150ff0df2b3', '6a36052d-fa53-2915-9764-30d81b2cc2b5', '5341b7a5-8a66-2cdd-8751-70b98263cb8d', '0ad2d3a5-79e2-2212-9a9e-2502a05fa678', '0cac755e-8d6f-2d13-8c6a-c0979ca34a4f', 'b8837e3f-57ec-29c6-89a2-b2417e091d50'], progress 91/248 Epoch 3
+2026-04-23 00:13:55 - INFO - videos=0000099, steps=0000457, Total Loss: 1.3316, 
+2026-04-23 00:13:55 - INFO - Training on video ['43b8caf1-6678-2e38-9ab4-0bdde7337aac', 'c9fb7aa5-2a5b-2cf7-902e-42a0339c7242', '82def5dc-25ba-20f9-8ba3-3bb706799abd', '8f0f145e-55de-28ce-8203-45b4e2bb36d9', 'd7d40d3e-7a5d-2b36-97b3-dd11abc0e876', '20c993c5-698f-29c5-8604-3248ede4091f'], progress 97/248 Epoch 3
+2026-04-23 00:14:05 - INFO - videos=0000100, steps=0000460, Total Loss: 1.2974, 
+2026-04-23 00:14:05 - INFO - Evaluating: Number of videos in the validation set: 62
+2026-04-23 00:14:14 - INFO - Processing video 42384916-60a7-271e-9c1f-6722abc6495d, progress 1/62

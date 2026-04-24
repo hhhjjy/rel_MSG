@@ -1,0 +1,191 @@
+你现在需要实现 Step 3：基于 learnable queries 的 object-level 建模损失函数。
+
+⚠️ 这是一个非常关键的实现，请严格按照下面定义执行，尤其注意 matching 的对象和数据流，不要使用 DETR 默认逻辑，不要把 query 和 bbox 直接匹配。
+
+====================
+一、任务定义（必须遵守）
+====================
+
+当前任务是：
+
+- 有 M 个 bbox（来自多帧/多视角观测）
+- 有 N 个真实 object（GT object）
+- 有 K 个 learnable queries（K >= N）
+
+目标是：
+
+👉 每个 query 表示一个 object（不是 bbox）
+👉 每个 object 对应多个 bbox（多视角观测）
+👉 query 通过 attention 聚合属于该 object 的 bbox
+
+====================
+二、输入输出（必须严格对齐）
+====================
+
+模型输出：
+
+- object_queries: [B, K, D]
+- object_attn: [B, K, M]        # query 对 bbox 的 attention
+- object_cls_logits: [B, K, C]
+- object_exist_logits: [B, K]
+
+输入（来自 dataloader）：
+
+- bboxes: [B, M, 4]
+- gt_object_ids: [B, M]         # 每个 bbox 属于哪个 object（0 ~ N-1）
+- gt_labels: [B, N]             # 每个 object 的类别
+
+====================
+三、⚠️ 关键：matching 定义（必须正确）
+====================
+
+❗❗❗ matching 是：
+
+    Query (K) ↔ GT Object (N)
+
+❗不是：
+
+    Query ↔ BBox（绝对错误）
+
+❗原因：
+- bbox 是 observation
+- object 才是语义目标
+
+====================
+四、GT 构造（必须实现）
+====================
+
+你需要构造：
+
+gt_mask: [B, N, M]
+
+定义：
+
+gt_mask[b, j, m] = 1  
+    如果 bbox m 属于 object j  
+否则 = 0
+
+====================
+五、matching cost（必须按这个逻辑）
+====================
+
+构造 cost matrix：
+
+cost: [B, K, N]
+
+对于每个 (query_i, object_j)，计算：
+
+1. classification cost
+   = CrossEntropy(object_cls_logits[i], gt_label_j)
+
+2. attention cost（最重要）
+   = BCE(object_attn[i], gt_mask[j])
+
+最终：
+
+cost = λ1 * cls_cost + λ2 * attn_cost
+
+⚠️ 不要用 bbox L1 作为主要 matching 依据
+⚠️ 不要直接用 DETR cost（那是 bbox-level）
+
+====================
+六、Hungarian matching（必须使用）
+====================
+
+对每个 batch：
+
+- 输入 cost[K, N]
+- 使用 linear_sum_assignment
+- 得到匹配：
+
+    matched_pairs = [(query_i, object_j)]
+
+====================
+七、loss 设计（必须完整实现）
+====================
+
+最终 loss 包含：
+
+1. L_cls（分类）
+   对 matched query：
+   CrossEntropy(object_cls_logits[q_i], gt_label_j)
+
+2. L_attn（核心）
+   对 matched query：
+   BCE(object_attn[q_i], gt_mask[j])
+
+3. L_exist（存在性）
+   对所有 query：
+
+   matched query → target = 1  
+   unmatched query → target = 0  
+
+   BCE(object_exist_logits, target)
+
+4. L_bbox（可选）
+   使用 attention 加权 bbox：
+
+   pred_bbox_i = sum(attn_i * bbox)
+
+   与 GT bbox 做 L1 + GIoU
+
+====================
+八、执行流程（必须按顺序实现）
+====================
+
+for each batch:
+
+1. 构造 gt_mask [N, M]
+2. 计算 cost[K, N]
+3. Hungarian matching
+4. 根据匹配结果计算：
+
+   - L_cls
+   - L_attn
+   - L_bbox（可选）
+
+5. 对所有 query 计算：
+
+   - L_exist
+
+6. 汇总 total_loss
+
+====================
+九、代码实现要求
+====================
+
+请实现以下模块：
+
+1. HungarianMatcher 类
+   - 输入：outputs, targets
+   - 输出：matching indices
+
+2. QueryLoss 类
+   - forward(outputs, targets)
+   - 返回 total_loss 和各项 loss
+
+3. gt_mask 构造函数
+
+====================
+十、⚠️ 常见错误（必须避免）
+====================
+
+❌ 错误1：query 和 bbox 做 matching  
+❌ 错误2：用 bbox 数量 M 做 Hungarian  
+❌ 错误3：忽略多 bbox → 单 object 的关系  
+❌ 错误4：把 attention 当 feature，而不是 assignment  
+❌ 错误5：直接照抄 DETR loss  
+
+====================
+十一、输出要求
+====================
+
+请输出：
+
+1. 完整的 HungarianMatcher 实现
+2. QueryLoss 实现
+3. gt_mask 构造代码
+4. 清晰的张量 shape 注释
+5. forward 逻辑完整可运行（伪代码级别即可）
+
+不要输出无关代码，不要改训练主框架。

@@ -1,0 +1,37 @@
+2026-04-22 15:08:29,447 INFO    MainThread:384135 [wandb_setup.py:_flush():81] Current SDK version is 0.25.1
+2026-04-22 15:08:29,447 INFO    MainThread:384135 [wandb_setup.py:_flush():81] Configure stats pid to 384135
+2026-04-22 15:08:29,448 INFO    MainThread:384135 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-04-22 15:08:29,448 INFO    MainThread:384135 [wandb_init.py:setup_run_log_directory():717] Logging user logs to /root/autodl-tmp/rel_MSG/wandb/run-20260422_150829-2oxvcfew/logs/debug.log
+2026-04-22 15:08:29,448 INFO    MainThread:384135 [wandb_init.py:setup_run_log_directory():718] Logging internal logs to /root/autodl-tmp/rel_MSG/wandb/run-20260422_150829-2oxvcfew/logs/debug-internal.log
+2026-04-22 15:08:29,448 INFO    MainThread:384135 [wandb_init.py:init():844] calling init triggers
+2026-04-22 15:08:29,449 INFO    MainThread:384135 [wandb_init.py:init():849] wandb.init called with sweep_config: {}
+config: {'seed': 42, 'device': 0, 'pp_threshold': 0.3, 'object_threshold': 0.2, 'vis_det': False, 'eval_split': 'test', 'train_split': 'train', 'output_dir': './exp-results/3rscan_split/2026-04-22_15-08-27', 'output_file': 'train', 'learning_rate': 2e-05, 'num_epochs': 10000, 'num_workers': 8, 'train_bs': 384, 'eval_bs': 64, 'bs_video': 6, 'eval_step': 100, 'log_every': 1, 'chkpt_every': 300, 'loss_params': {'pr': 1.0, 'obj': 1.0, 'tcr': 0.0, 'mean': 0.0}, 'dataset_path': '/root/autodl-tmp/dataset/3rscan_msg_split', 'all_splits': ['Training', 'Validation', 'Test', 'mini-val'], 'image_size': [960, 540], 'model_image_size': [224, 224], 'num_classes': 18, 'class_map': {'bathtub': 1, 'bed': 2, 'bookshelf': 3, 'cabinet': 4, 'chair': 5, 'counter': 6, 'curtain': 7, 'desk': 8, 'door': 9, 'floor': 10, 'otherfurniture': 11, 'picture': 12, 'refridgerator': 13, 'shower curtain': 14, 'sink': 15, 'sofa': 16, 'table': 17, 'toilet': 18, 'wall': 19, 'window': 20, 'background': 0}, 'inv_class_map': {1: 'bathtub', 2: 'bed', 3: 'bookshelf', 4: 'cabinet', 5: 'chair', 6: 'counter', 7: 'curtain', 8: 'desk', 9: 'door', 10: 'floor', 11: 'otherfurniture', 12: 'picture', 13: 'refridgerator', 14: 'shower curtain', 15: 'sink', 16: 'sofa', 17: 'table', 18: 'toilet', 19: 'wall', 20: 'window', 0: 'background'}, 'color_dict': {'background': [0.0, 0.0, 0.0], 'bathtub': [1.0, 0.0, 0.0], 'bed': [0.0, 1.0, 0.0], 'bookshelf': [0.0, 0.0, 1.0], 'cabinet': [1.0, 1.0, 0.0], 'chair': [1.0, 0.0, 1.0], 'counter': [0.0, 1.0, 1.0], 'curtain': [0.5, 0.0, 1.0], 'desk': [0.5, 1.0, 0.0], 'door': [1.0, 0.5, 0.0], 'floor': [0.0, 0.5, 1.0], 'otherfurniture': [0.5, 0.0, 0.5], 'picture': [1.0, 1.0, 1.0], 'refridgerator': [0.0, 0.5, 0.5], 'shower curtain': [0.5, 0.5, 0.0], 'sink': [0.5, 0.5, 0.5], 'sofa': [0.2, 0.8, 0.2], 'table': [0.2, 0.2, 0.8], 'toilet': [0.8, 0.2, 0.2], 'wall': [0.8, 0.8, 0.2], 'window': [0.2, 0.8, 0.8]}, 'detector': {'model': 'gt', 'num_classes': 18, 'freeze': True, 'weights': 'DEFAULT', 'pre_saved': False, 'result_path': ''}, 'obj_embedder': {'model': 'dinov2-base', 'weights': 'DEFAULT', 'freeze': True, 'output_type': 'feature'}, 'place_embedder': {'model': 'dinov2-base', 'weights': 'DEFAULT', 'freeze': True, 'output_type': 'feature'}, 'associator': {'model': 'AoMSG-S-4', 'object_dim': 768, 'place_dim': 768, 'output_dim': 1024}, 'pr_loss': 'mse', 'obj_loss': 'bce', 'pos_weight': 10, 'pp_weight': 1, 'wandb': True, 'resume': False, 'resume_path': '/root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth', 'eval_output_dir': './exp-results/eval', 'eval_chkpt': '/root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth', 'save_every': False, 'warmup_epochs': 3, 'warmup': False, 'experiment': 'aomsg_3rscan_split', 'run_id': '2026-04-22_15-08-27', '_wandb': {}}
+2026-04-22 15:08:29,449 INFO    MainThread:384135 [wandb_init.py:init():892] starting backend
+2026-04-22 15:08:29,810 INFO    MainThread:384135 [wandb_init.py:init():895] sending inform_init request
+2026-04-22 15:08:29,817 INFO    MainThread:384135 [wandb_init.py:init():903] backend started and connected
+2026-04-22 15:08:29,825 INFO    MainThread:384135 [wandb_init.py:init():973] updated telemetry
+2026-04-22 15:08:29,827 INFO    MainThread:384135 [wandb_init.py:init():997] communicating run to backend with 90.0 second timeout
+2026-04-22 15:08:31,742 WARNING MainThread:384135 [wandb_init.py:init():1587] [no run ID] interrupted
+Traceback (most recent call last):
+  File "/root/miniconda3/envs/msg/lib/python3.11/site-packages/wandb/sdk/wandb_init.py", line 1578, in init
+    run = wi.init(run_settings, run_config, run_printer)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/miniconda3/envs/msg/lib/python3.11/site-packages/wandb/sdk/wandb_init.py", line 1008, in init
+    result = wait_with_progress(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/root/miniconda3/envs/msg/lib/python3.11/site-packages/wandb/sdk/mailbox/wait_with_progress.py", line 24, in wait_with_progress
+    return wait_all_with_progress(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/miniconda3/envs/msg/lib/python3.11/site-packages/wandb/sdk/mailbox/wait_with_progress.py", line 78, in wait_all_with_progress
+    return asyncer.run(progress_loop_with_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/miniconda3/envs/msg/lib/python3.11/site-packages/wandb/sdk/lib/asyncio_manager.py", line 137, in run
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/root/miniconda3/envs/msg/lib/python3.11/concurrent/futures/_base.py", line 451, in result
+    self._condition.wait(timeout)
+  File "/root/miniconda3/envs/msg/lib/python3.11/threading.py", line 327, in wait
+    waiter.acquire()
+KeyboardInterrupt
+2026-04-22 15:08:31,977 INFO    wandb-AsyncioManager-main:384135 [service_client.py:_forward_responses():134] Reached EOF.
+2026-04-22 15:08:31,978 INFO    wandb-AsyncioManager-main:384135 [mailbox.py:close():155] Closing mailbox, abandoning 1 handles.

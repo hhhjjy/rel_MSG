@@ -1,0 +1,107 @@
+现在请基于我已经搭好的新项目框架，优先填充“数据集加载部分”。
+
+这不是让你从零设计一套全新的 dataset，而是要你：
+1. 先分析我后续提供的 MSG 项目中与数据集加载相关的源码
+2. 判断哪些逻辑可以直接复用
+3. 判断哪些逻辑需要小改后复用
+4. 把这些逻辑迁移/适配到我当前的新框架中
+5. 保持新框架的数据接口清晰、稳定、可扩展
+
+【当前目标】
+我需要在新框架中实现 dataset / dataloader 部分，使其能够为后续模型提供以下信息（如实际 MSG 数据字段不同，请以已有代码为准并做适配）：
+
+- 多视角图像
+- 每个视角对应的 bbox / region annotations 或 proposals
+- object instance / association 相关信息（如果 MSG 中已有）
+- 图像级 / scene级元信息
+- 后续构造图所需的监督信号（如果当前已有）
+- 至少要能支持模型 forward 所需的基本输入组织
+
+【你要做的事情】
+请基于我提供的 MSG 数据集相关源码，完成以下任务：
+
+### 任务1：先分析 MSG 的数据集加载逻辑
+请找出并说明：
+1. 数据集类定义在哪些文件
+2. `__getitem__` 返回了哪些字段
+3. 图像是如何读取与预处理的
+4. bbox / annotation / graph supervision 是如何读取的
+5. 多视角样本是如何组织的
+6. collate_fn 是否有特殊逻辑
+7. dataloader 是如何构建的
+8. 哪些字段是当前新框架必须保留的
+9. 哪些字段可以暂时保留占位
+
+### 任务2：映射到新框架
+请将 MSG 的 dataset 逻辑映射到我当前的新框架中，建议至少包含以下文件：
+- datasets/dataset.py
+- datasets/transforms.py
+- datasets/collate.py
+- datasets/build.py
+
+如果你认为文件划分需要微调，可以说明理由，但不要过度设计。
+
+### 任务3：填充代码
+要求：
+1. 尽量复用 MSG 中已有的数据读取思路
+2. 新框架中的 Dataset 类要清楚定义输出字段
+3. 至少明确输出以下内容（如实际字段命名需适配，可以调整，但请说明）：
+   - images                # 多视角图像
+   - boxes                 # 每个视角对应 bbox
+   - labels                # 如果有类别标签
+   - instance_ids          # 如果有跨视图 object instance 对应关系
+   - scene_id / sample_id
+   - meta_info             # 例如 view_id, image_path, original_size 等
+4. 如果 MSG 中已有 graph supervision（比如 place-place / place-object），请尽量保留接口
+5. collate_fn 要能处理：
+   - 多视角图像数量可能固定或可变
+   - 每张图 bbox 数量不一致
+6. build.py 中给出 dataloader 构建函数骨架
+7. 保持代码风格清晰，注释明确，方便后续继续填充
+
+【重要约束】
+1. 不要脱离我提供的 MSG 数据集代码重新发明一套 dataset
+2. 优先“映射和适配 MSG 现有实现”，而不是从头写
+3. 不要一次性加入过多复杂逻辑
+4. 如果某些字段在 MSG 中不存在，请明确说明并保留 TODO 占位
+5. 如果需要修改新框架里其他文件来适配 dataset 输出，请明确列出并给 patch
+6. 当前阶段先把数据加载链路打通，优先保证：
+   - 类定义合理
+   - 输出字段明确
+   - collate_fn 可用
+   - dataloader 能构建成功
+
+【输出格式】
+请严格按以下格式输出：
+
+第一部分：MSG 数据集加载逻辑分析
+- 数据集类位置
+- `__getitem__` 返回字段
+- 多视角组织方式
+- annotation / bbox / graph 信息来源
+- collate_fn / dataloader 结构
+
+第二部分：新框架中的映射设计
+- 新文件划分
+- 每个文件职责
+- Dataset 输出字段定义
+
+第三部分：逐文件代码
+- datasets/dataset.py
+- datasets/transforms.py
+- datasets/collate.py
+- datasets/build.py
+- 如有必要，再补充需要修改的其他文件
+
+第四部分：新旧实现对应关系说明
+- 新框架的每个 dataset 模块，对应 MSG 中哪部分代码
+- 是直接复用、适配复用，还是新增占位
+
+第五部分：如何测试
+- 给出一个最小可运行的 dataset / dataloader smoke test
+- 给出一个 batch 的 shape 检查示例
+
+【特别提醒】
+请把自己当成一名正在“把旧项目的数据加载模块迁移到新框架中”的工程师。
+你的重点不是发明一个漂亮的新 dataset，而是基于 MSG 现有代码，搭出一个能稳定服务于新模型框架的数据加载模块。
+当前这一轮先只完成“MSG 数据集加载逻辑分析 + 新框架映射设计”，不要直接输出逐文件代码。等我确认后，再继续给出代码 patch。

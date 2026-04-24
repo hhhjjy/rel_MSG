@@ -1,0 +1,76 @@
+dataset_path: ./arkitdata/'
+# annotation file: refine_topo_gt.json
+all_splits: ['Training', 'Validation', 'Test', 'mini-val']
+#image_size: [540, 960] # replica
+image_size: [960, 540] # 3rscan
+model_image_size: [224, 224]
+num_classes: 18
+class_map:
+  bathtub: 1
+  bed: 2
+  bookshelf: 3
+  cabinet: 4
+  chair: 5
+  counter: 6
+  curtain: 7
+  desk: 8
+  door: 9
+  floor: 10
+  otherfurniture: 11
+  picture: 12
+  refridgerator: 13
+  shower curtain: 14
+  sink: 15
+  sofa: 16
+  table: 17
+  toilet: 18
+  wall: 19
+  window: 20
+  background: 0
+
+inv_class_map:
+    1: bathtub
+    2: bed
+    3: bookshelf
+    4: cabinet
+    5: chair
+    6: counter
+    7: curtain
+    8: desk
+    9: door
+    10: floor
+    11: otherfurniture 
+    12: picture
+    13: refridgerator
+    14: shower curtain
+    15: sink
+    16: sofa
+    17: table
+    18: toilet
+    19: wall
+    20: window
+    0: background
+
+color_dict:
+  "background": [0.0, 0.0, 0.0]
+  "bathtub": [1.0, 0.0, 0.0]
+  "bed": [0.0, 1.0, 0.0]
+  "bookshelf": [0.0, 0.0, 1.0]
+  "cabinet": [1.0, 1.0, 0.0]
+  "chair": [1.0, 0.0, 1.0]
+  "counter": [0.0, 1.0, 1.0]
+  "curtain": [0.5, 0.0, 1.0]
+  "desk": [0.5, 1.0, 0.0]
+  "door": [1.0, 0.5, 0.0]
+  "floor": [0.0, 0.5, 1.0]
+  "otherfurniture": [0.5, 0.0, 0.5]
+  "picture": [1.0, 1.0, 1.0]
+  "refridgerator": [0.0, 0.5, 0.5]
+  "shower curtain": [0.5, 0.5, 0.0]
+  "sink": [0.5, 0.5, 0.5]
+  "sofa": [0.2, 0.8, 0.2]
+  "table": [0.2, 0.2, 0.8]
+  "toilet": [0.8, 0.2, 0.2]
+  "wall": [0.8, 0.8, 0.2]
+  "window": [0.2, 0.8, 0.8]
+

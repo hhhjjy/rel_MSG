@@ -1,0 +1,94 @@
+# Step 2: Alternating Attention + Decoder 实验配置
+# 基于 baseline，使用 AA + Decoder 替代 association_model
+
+dataset_path: '/mnt/NAS/data/jz4725/msgdata/'
+device: 0
+pp_threshold: 0.3
+object_threshold: 0.2
+
+# coefficients for multitasking loss
+loss_params:
+  pr: 1.0
+  obj: 1.0
+  tcr: 0.0
+  mean: 0.0
+
+# ============================================
+# Step 2 核心配置: 使用 forward_step2
+# ============================================
+forward_version: 'step2'
+feature_refine_method: 'vggt'
+
+# Alternating Attention 配置
+alternating_attention:
+  num_aa_layers: 2            # AlternatingAttention 层数
+  num_decoder_layers: 2       # Transformer Decoder 层数
+  num_heads: 8                # Attention heads
+  mlp_ratio: 4.0              # MLP 隐藏层维度比例
+  dropout: 0.1                # Dropout 率
+  aa_block_size: 1            # 每次交替的 block 数量
+
+# 模型维度配置 (与 baseline 保持一致)
+hidden_model_dim: 768
+num_obj_queries: 100
+num_place_queries: 10
+num_obj_classes: 18
+num_edge_types: 1
+num_views: 4
+num_bboxes_per_view: 20
+
+# 场景图配置
+use_scene_graph: False
+num_relations: 56
+num_rel_queries: 50
+
+# 骨干网络配置
+backbone:
+  model_type: 'dinov2-base'
+  freeze: True
+  weights: 'DEFAULT'
+
+# 图像尺寸配置
+model_image_size: [224, 224]
+image_size: [1920, 1440]
+
+# 训练配置
+num_epochs: 100
+batch_size: 8
+train_bs: 8
+eval_bs: 1
+bs_video: 1
+num_workers: 4
+
+# 学习率配置
+learning_rate: 0.0001
+warmup_epochs: 5
+warmup: 'linear'
+
+# 损失函数配置
+pr_loss: 'mse'
+obj_loss: 'bce'
+pos_weight: 1.0
+pp_weight: 1.0
+
+# 日志和检查点配置
+log_every: 10
+chkpt_every: 100
+eval_step: 500
+save_every: True
+
+# 评估配置
+eval_split: 'val'
+eval_chkpt: null
+eval_output_dir: './outputs/eval'
+
+# wandb 配置
+wandb: False
+project_name: 'aomsg_step2'
+run_name: 'step2_aa_decoder'
+
+# 随机种子
+seed: 42
+
+# 输出目录
+output_dir: './outputs/step2'

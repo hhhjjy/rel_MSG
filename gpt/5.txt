@@ -1,0 +1,321 @@
+你现在是一个资深 PyTorch 代码迁移与重构工程师，请你把 PairNet 中“object query 之后”的后半部分模块迁移并集成到我当前框架中。
+
+## 一、我的目标
+我当前框架里已经有 **object query**，现在我希望：
+
+1. 以我的 object query 作为输入
+2. 接入 PairNet 在 object query 后面的模块
+3. 最终输出 **scene graph triplets**
+4. 同时补齐 **scene graph evaluation** 评估模块
+
+### 我明确要迁移的模块范围
+只迁移 PairNet 后半段，具体包括：
+
+#### A. Pair Proposal Network (PPN)
+- Subject Projector
+- Object Projector
+- subject embedding / object embedding
+- Cosine Similarity
+- rough pair proposal matrix
+- Matrix Learner
+- filtered pair proposal matrix
+- top-K selected subject-object pairs
+
+#### B. Relation Fusion / Relation Head
+- 将 selected subject query 和 selected object query 组合成 pair query
+- relation query 的构造
+- Relation Decoder
+  - Multi-Head Cross-Attention
+  - Multi-Head Self-Attention
+- 输出 relation query
+- 最终输出 scene graph triplets
+
+#### C. Scene Graph Evaluation
+需要补充 scene graph 的评估模块，至少支持：
+- triplet 预测结果整理
+- Recall@K
+- mean Recall@K（如果 PairNet 或当前框架使用）
+- 支持常见 scene graph setting：
+  - predcls
+  - sgcls
+  - sgdet
+如果当前任务只需要其中一种，也请先做成可扩展结构。
+
+---
+
+## 二、参考项目路径
+PairNet 项目路径：
+/root/autodl-tmp/rel_MSG/reference/pair-net
+
+我的项目路径：
+/root/autodl-tmp/rel_MSG
+---
+
+## 三、硬性约束（非常重要）
+### 绝对禁止：
+1. 禁止引入 mmcv
+2. 禁止引入 mmdet
+3. 禁止安装 mmcv / mmdet
+4. 禁止保留任何 `from mmcv...` 或 `from mmdet...` 的导入
+5. 禁止把 PairNet 整个训练框架照搬进来
+
+### 只允许使用：
+- Python 标准库
+- PyTorch
+- torch.nn
+- torch.nn.functional
+- 当前项目里已存在的基础模块和工具函数
+
+### 迁移原则：
+- 只迁移“算法核心”
+- 不迁移“框架壳子”
+- 不迁移 dataset / runner / hook / registry / config 系统
+- 不迁移 panoptic segmentation 前半段
+- 我的输入已经有 object query，不需要你再实现前面的检测或分割网络
+
+---
+
+## 四、你必须理解的输入输出关系
+
+### 当前已有输入
+我已有：
+- object query，记作 `Q_obj`
+- 对应每个 object query 的 object-level prediction / object index / object score 等必要信息（如果当前框架已有，请优先复用）
+
+### 你要完成的后续流程
+你需要把 `Q_obj` 输入到 PairNet 的后续链路中，完成：
+
+1. Subject/Object Projector
+   - 从 `Q_obj` 生成 `E_sub` 和 `E_obj`
+2. Pair proposal
+   - 通过 similarity 得到 rough pair proposal matrix
+   - 通过 Matrix Learner 得到 filtered pair proposal matrix
+   - 从中选出 top-K 主体-客体对
+3. Pair query construction
+   - 根据 top-K 的 subject/object index 取出对应 query
+   - 构造 `Q_pair`
+4. Relation fusion / decoder
+   - 生成 relation query `Q_r`
+   - 用 relation decoder 建模 pair relation
+5. Scene graph output
+   - 输出 `(subject, predicate, object)` triplets
+   - 同时保留必要的 score / category / ranking 信息
+6. Evaluation
+   - 支持与 GT triplets 对齐评估
+   - 输出 Recall@K / mRecall@K 等指标
+
+---
+
+## 五、你的具体任务步骤
+请严格按下面顺序执行，不能跳步。
+
+### Step 1：扫描 PairNet 项目
+递归分析：
+/root/autodl-tmp/rel_MSG/reference/pair-net
+
+重点只看与以下关键词相关的代码：
+- pair proposal
+- subject projector
+- object projector
+- pair matrix
+- matrix learner
+- relation query
+- relation decoder
+- triplet prediction
+- scene graph evaluation
+- recall / mean recall / sgdet / sgcls / predcls
+
+输出：
+1. 与我目标最相关的模块文件清单
+2. 每个模块的作用
+3. 每个模块是否依赖 mmcv / mmdet
+4. 哪些模块可以直接迁移
+5. 哪些模块必须改写
+6. 哪些模块可以放弃
+
+---
+
+### Step 2：依赖剥离
+对你选中的每个模块，明确列出：
+
+- 原始文件路径
+- 类名 / 函数名
+- 输入输出
+- 依赖的外部符号
+- 这些外部符号来自哪里
+  - mmcv
+  - mmdet
+  - pair-net 内部其他文件
+- 哪些依赖只是“框架包装”
+- 哪些依赖是真正“算法本体”
+- 如何用纯 PyTorch + 当前项目已有结构替代
+
+要求：
+- 采用“最小闭包迁移”
+- 不要为了一个函数把整条 mmcv/mmdet 依赖链带进来
+- 能删的包装全部删掉
+- 能复用我现有框架的就复用，不要重复造轮子
+
+---
+
+### Step 3：制定迁移设计
+请针对“我的 object query 已经存在”这个前提，给出明确集成方案。
+
+至少说明：
+1. 我当前框架中 object query 应该接到哪个新模块
+2. 新模块建议放到哪些目录
+3. 需要新增哪些文件
+4. 需要修改哪些现有文件
+5. forward 流程如何串起来
+6. 训练时 loss 如何接入
+7. 推理时 triplet 如何生成
+8. 评估时如何读取 prediction 和 GT
+
+### 迁移设计必须遵循：
+- 不改动前面的 object query 产生逻辑
+- 从 object query 开始接入 PairNet 后半段
+- 最小侵入式改造
+- 保持与当前项目风格一致
+
+---
+
+### Step 4：实际改代码
+你要直接给出“可以落地”的完整代码，不要只给思路。
+
+你需要完成：
+1. Pair Proposal Network 的原生 PyTorch 版本
+2. Relation Fusion / Relation Decoder 的原生 PyTorch 版本
+3. Scene graph triplet 生成逻辑
+4. Scene graph evaluation 模块
+5. 与现有框架的接入代码
+
+### 对 mmcv / mmdet 常见依赖的替代要求
+若发现以下内容，按下面方式处理：
+
+- `Registry`, `build_from_cfg`
+  -> 改为显式 import + 显式实例化
+
+- `BaseModule`
+  -> 改为 `nn.Module`
+
+- `ConvModule`
+  -> 改为标准 `nn.Linear` / `nn.Conv2d` / `nn.LayerNorm` / 激活函数组合
+
+- `auto_fp16`, `force_fp32`
+  -> 删除，必要时使用原生 torch amp 兼容写法
+
+- `multi_apply`
+  -> 改为普通 Python 循环
+
+- `xavier_init`, `constant_init`, `normal_init`
+  -> 改为 `torch.nn.init.*`
+
+- mmcv transformer wrapper
+  -> 用原生 `nn.MultiheadAttention`、MLP、LayerNorm 重写
+
+- mmdet matcher / assigner / sampler
+  -> 如果只是训练 supervision 中间件，请提取最小必要逻辑，不要迁入整套检测框架
+  -> 若 PairNet 使用 Hungarian matching 做 pair supervision，请只保留必要的 matching 逻辑
+
+---
+
+## 六、特别强调的算法保留点
+迁移时请重点保留以下 PairNet 核心思想，而不是只保留形式：
+
+1. **subject / object 双投影**
+   - 从 object query 派生出两个不同语义空间
+2. **pair proposal matrix**
+   - 不是简单枚举所有 pair，而是先估计 pair proposal 分数
+3. **matrix learner 过滤 pair**
+   - 要保留 rough -> filtered 的过程
+4. **top-K pair selection**
+   - 根据 proposal matrix 选关系候选对
+5. **relation query / pair query**
+   - 要保留 subject-object 对到 relation 表征的映射
+6. **relation decoder**
+   - 用于对 relation query 进一步建模
+7. **scene graph triplet generation**
+   - 输出结构化 `(sub, pred, obj)` 结果
+8. **scene graph evaluation**
+   - 要能评估 triplet 预测质量
+
+---
+
+## 七、你输出时必须包含的内容
+请严格用以下结构输出：
+
+### 1.【候选迁移模块扫描结果】
+- 文件路径
+- 模块名
+- 功能
+- 是否依赖 mmcv/mmdet
+- 是否迁移
+
+### 2.【依赖剥离结果】
+- 每个模块依赖什么
+- 哪些删掉
+- 哪些重写
+- 哪些复用当前框架
+
+### 3.【迁移设计方案】
+- 从 object query 到 triplet 的完整 forward 流
+- 训练 / 推理 / 评估如何接线
+- 新增/修改文件清单
+
+### 4.【完整代码实现】
+必须给出完整代码，而不是伪代码。
+至少包括：
+- pair proposal module
+- relation decoder module
+- triplet generation module
+- evaluation module
+- integration glue code
+
+### 5.【最小验证方法】
+至少给出：
+- 一个 dummy input 的 shape 测试
+- 一次 forward 测试
+- triplet 输出格式检查
+- evaluation 调用样例
+
+### 6.【风险点】
+列出最可能出现的问题，例如：
+- object query 维度不匹配
+- object index / label / score 结构不一致
+- GT triplet 格式与 evaluator 不兼容
+- top-K pair 数量设置不合理
+
+---
+
+## 八、实现时的风格要求
+- 代码必须简洁
+- 优先可运行
+- 优先最小依赖
+- 优先最小改动
+- 命名清晰
+- 每个模块都写清楚输入输出 shape
+- 所有张量 shape 在关键位置加注释
+- 不要空泛解释，直接给出落地代码
+
+---
+
+## 九、执行策略
+现在开始执行时，不要先大段讲概念。
+请先做：
+
+1. 扫描 `/root/autodl-tmp/rel_MSG/reference/pair-net`
+2. 找出“object query 之后”相关模块
+3. 输出第一版：
+   - 【候选迁移模块扫描结果】
+   - 【依赖剥离结果】
+   - 【迁移设计方案】
+
+等这三部分完成后，再继续给出完整代码实现。
+
+
+补充说明：
+- 我的 object query 已经是现成的，请你不要再实现前面的检测/分割主干。
+- 你需要把 PairNet 后半段改造成“可插拔模块”，让我能把 object query 直接送进去。
+- 若 PairNet 原始实现和我现有框架接口不一致，优先适配我现有框架，而不是要求我大改主干。
+- 如果 evaluation 模块在 PairNet 里分散在多个文件中，请帮我合并整理成一个清晰可用的 evaluator。
+- 如果某些训练 supervision 强依赖 mmdet，只保留必要数学逻辑，简化成最小可运行版本。

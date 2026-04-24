@@ -1,0 +1,268 @@
+_wandb:
+    value:
+        cli_version: 0.25.1
+        m: []
+        python_version: 3.11.8
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+            "3":
+                - 13
+                - 16
+            "4": 3.11.8
+            "5": 0.25.1
+            "6": 4.57.6
+            "12": 0.25.1
+            "13": linux-x86_64
+all_splits:
+    value:
+        - Training
+        - Validation
+        - Test
+        - mini-val
+associator:
+    value:
+        model: AoMSG-S-4
+        object_dim: 768
+        output_dim: 1024
+        place_dim: 768
+bs_video:
+    value: 6
+chkpt_every:
+    value: 300
+class_map:
+    value:
+        background: 0
+        bathtub: 1
+        bed: 2
+        bookshelf: 3
+        cabinet: 4
+        chair: 5
+        counter: 6
+        curtain: 7
+        desk: 8
+        door: 9
+        floor: 10
+        otherfurniture: 11
+        picture: 12
+        refridgerator: 13
+        shower curtain: 14
+        sink: 15
+        sofa: 16
+        table: 17
+        toilet: 18
+        wall: 19
+        window: 20
+color_dict:
+    value:
+        background:
+            - 0
+            - 0
+            - 0
+        bathtub:
+            - 1
+            - 0
+            - 0
+        bed:
+            - 0
+            - 1
+            - 0
+        bookshelf:
+            - 0
+            - 0
+            - 1
+        cabinet:
+            - 1
+            - 1
+            - 0
+        chair:
+            - 1
+            - 0
+            - 1
+        counter:
+            - 0
+            - 1
+            - 1
+        curtain:
+            - 0.5
+            - 0
+            - 1
+        desk:
+            - 0.5
+            - 1
+            - 0
+        door:
+            - 1
+            - 0.5
+            - 0
+        floor:
+            - 0
+            - 0.5
+            - 1
+        otherfurniture:
+            - 0.5
+            - 0
+            - 0.5
+        picture:
+            - 1
+            - 1
+            - 1
+        refridgerator:
+            - 0
+            - 0.5
+            - 0.5
+        shower curtain:
+            - 0.5
+            - 0.5
+            - 0
+        sink:
+            - 0.5
+            - 0.5
+            - 0.5
+        sofa:
+            - 0.2
+            - 0.8
+            - 0.2
+        table:
+            - 0.2
+            - 0.2
+            - 0.8
+        toilet:
+            - 0.8
+            - 0.2
+            - 0.2
+        wall:
+            - 0.8
+            - 0.8
+            - 0.2
+        window:
+            - 0.2
+            - 0.8
+            - 0.8
+dataset_path:
+    value: /root/autodl-tmp/dataset/3rscan_msg_split
+detector:
+    value:
+        freeze: true
+        model: gt
+        num_classes: 18
+        pre_saved: false
+        result_path: ""
+        weights: DEFAULT
+device:
+    value: 0
+eval_bs:
+    value: 64
+eval_chkpt:
+    value: /root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth
+eval_output_dir:
+    value: ./exp-results/eval
+eval_split:
+    value: test
+eval_step:
+    value: 100
+experiment:
+    value: aomsg_3rscan_split
+image_size:
+    value:
+        - 960
+        - 540
+inv_class_map:
+    value:
+        "0": background
+        "1": bathtub
+        "2": bed
+        "3": bookshelf
+        "4": cabinet
+        "5": chair
+        "6": counter
+        "7": curtain
+        "8": desk
+        "9": door
+        "10": floor
+        "11": otherfurniture
+        "12": picture
+        "13": refridgerator
+        "14": shower curtain
+        "15": sink
+        "16": sofa
+        "17": table
+        "18": toilet
+        "19": wall
+        "20": window
+learning_rate:
+    value: 2e-05
+log_every:
+    value: 1
+loss_params:
+    value:
+        mean: 0
+        obj: 1
+        pr: 1
+        tcr: 0
+model_image_size:
+    value:
+        - 224
+        - 224
+num_classes:
+    value: 18
+num_epochs:
+    value: 10000
+num_workers:
+    value: 8
+obj_embedder:
+    value:
+        freeze: true
+        model: dinov2-base
+        output_type: feature
+        weights: DEFAULT
+obj_loss:
+    value: bce
+object_threshold:
+    value: 0.2
+output_dir:
+    value: ./exp-results/3rscan_split/2026-04-22_15-08-27
+output_file:
+    value: train
+place_embedder:
+    value:
+        freeze: true
+        model: dinov2-base
+        output_type: feature
+        weights: DEFAULT
+pos_weight:
+    value: 10
+pp_threshold:
+    value: 0.3
+pp_weight:
+    value: 1
+pr_loss:
+    value: mse
+resume:
+    value: false
+resume_path:
+    value: /root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth
+run_id:
+    value: 2026-04-22_15-08-27
+save_every:
+    value: false
+seed:
+    value: 42
+train_bs:
+    value: 384
+train_split:
+    value: train
+vis_det:
+    value: false
+wandb:
+    value: true
+warmup:
+    value: false
+warmup_epochs:
+    value: 3

@@ -1,0 +1,44 @@
+# for realworld inference
+dataset_path: '/root/autodl-tmp/dataset/3rscan_msg/data'
+device: 0
+pp_threshold: 0.3
+object_threshold: 0.2
+
+eval_split: ''
+
+# for eval
+eval_output_dir: '/root/autodl-tmp/MSG/output_3rscan/30' # this is specific to trained checkpoints
+eval_chkpt: /root/autodl-tmp/MSG/exp-results/aomsg/2026-03-29_19-47-23/checkpoints/29-step60+.pth #null for no checkpoint
+save_every: True # if save specific results for every video
+vis_det: True
+
+num_workers: 8
+eval_bs: 64
+
+log_every: 1
+
+# detector:
+#   model: grounding-dino # "grounding-dino", "fasterrcnn", "gt", "fasterrcnnv2"
+#   num_classes: 18
+#   freeze: True
+#   weights: DEFAULT
+#   pre_saved: True
+#   result_path: "/root/autodl-tmp/mini-val/mini-val"
+
+obj_embedder:
+  model: "dinov2-base" #"dinov2-small", "convnext-tiny-224", #'resnet50', # "dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"
+  weights: DEFAULT
+  freeze: True
+  output_type: feature
+
+place_embedder:
+  model: "dinov2-base" #"convnext-tiny", #'resnet50', # "dinov2-base", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"
+  weights: DEFAULT
+  freeze: True
+  output_type: feature # mean, cls, feature
+
+associator:
+  model: "AoMSG-S-4" # "AoMSG-S-2"
+  object_dim: 768 # FYI resnet18=512, dinov2-small=384, dinov2-base=768
+  place_dim: 768
+  output_dim: 1024

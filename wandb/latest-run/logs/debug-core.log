@@ -1,0 +1,14 @@
+{"time":"2026-04-22T15:08:29.705173318+08:00","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmp9l8d_a4y/port-384135.txt","pid":384135,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2026-04-22T15:08:29.705930508+08:00","level":"INFO","msg":"server: will exit if parent process dies","ppid":384135}
+{"time":"2026-04-22T15:08:29.705920086+08:00","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-384135-384495-566081296/socket","Net":"unix"}}
+{"time":"2026-04-22T15:08:29.808953103+08:00","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2026-04-22T15:08:29.820726067+08:00","level":"INFO","msg":"handleInformInit: received","streamId":"2oxvcfew","id":"1(@)"}
+{"time":"2026-04-22T15:08:30.965018335+08:00","level":"INFO","msg":"handleInformInit: stream started","streamId":"2oxvcfew","id":"1(@)"}
+{"time":"2026-04-22T15:08:31.741335706+08:00","level":"INFO","msg":"connection: cancelling request","id":"1(@)","requestId":"hcnax16bcnj3"}
+{"time":"2026-04-22T15:08:31.977194317+08:00","level":"INFO","msg":"handleInformTeardown: server teardown initiated","id":"1(@)"}
+{"time":"2026-04-22T15:08:31.977333647+08:00","level":"INFO","msg":"server is shutting down"}
+{"time":"2026-04-22T15:08:31.977316791+08:00","level":"INFO","msg":"connection: closing","id":"1(@)"}
+{"time":"2026-04-22T15:08:31.977517334+08:00","level":"INFO","msg":"connection: closed successfully","id":"1(@)"}
+{"time":"2026-04-22T15:08:31.977554206+08:00","level":"INFO","msg":"server: listener closed","addr":{"Name":"/tmp/wandb-384135-384495-566081296/socket","Net":"unix"}}
+{"time":"2026-04-22T15:08:33.091951105+08:00","level":"ERROR","msg":"processOutgoingData: flush error","error":"write unix /tmp/wandb-384135-384495-566081296/socket->@: use of closed network connection","id":"1(@)"}
+{"time":"2026-04-22T15:08:33.319024003+08:00","level":"INFO","msg":"server: parent process exited, terminating service process"}

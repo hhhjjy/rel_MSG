@@ -1,0 +1,186 @@
+现在我已经有一个新的模型框架，需要把现有 MSG 项目的代码逐模块填充进来。
+
+注意：这不是直接复制 MSG，而是“在新框架中迁移 MSG 的能力”。
+
+【核心原则】
+1. 优先复用 MSG 现有代码
+2. 允许最小改造
+3. 保持新框架接口不变
+4. 不要回退到原 MSG 结构
+5. 不要把多个模块混在一起
+
+【你要做的事情】
+针对我当前指定的模块：
+
+1. 先分析 MSG 中相关代码：
+   - 所在文件
+   - 类 / 函数
+   - 输入输出
+   - 关键逻辑
+
+2. 判断：
+   - 哪些代码可以直接复用
+   - 哪些需要小改
+   - 哪些必须重写
+
+3. 映射到新框架：
+   - 对应哪个文件
+   - 对应哪个类
+   - 对应哪个函数
+
+4. 给出迁移方案：
+   - 保留哪些逻辑
+   - 改哪些地方
+   - 为什么
+
+5. 给出逐文件 patch：
+   - 明确插入位置
+   - 不要重写整个文件
+
+6. 最后给：
+   - shape 检查
+   - debug建议
+
+【重要约束】
+- 不要重新设计模型
+- 不要忽略 MSG 原有细节
+- 不要把代码写得比 MSG 更复杂
+- 如果不确定某部分，请明确说“需要更多代码”
+请优先“迁移和改写 MSG 代码”，而不是“重新实现一个更简单版本”。
+
+【输出格式】
+1. MSG相关代码分析
+2. 迁移映射
+3. 修改文件列表
+4. 逐文件patch
+5. shape/debug检查
+
+严格按照以上约束完成以下内容
+
+任务一：
+现在请填充 backbone.py 和 roi_extractor.py。
+
+目标：
+- 完全复用 MSG 中的视觉编码和 bbox feature 提取逻辑
+
+要求：
+1. 找到 MSG 中：
+   - backbone 定义
+   - feature extraction
+   - ROI / bbox feature 提取部分
+2. 映射到：
+   - models/backbone.py
+   - models/roi_extractor.py
+3. 尽量直接复用代码
+4. 保持输出：
+   - image_feats
+   - bbox_feats
+5. 不要改训练逻辑
+
+重点：
+这是最简单的模块，请尽量做到“接近1:1迁移”。
+
+任务二、
+现在请填充 cross_view_encoder.py。
+
+目标：
+把 MSG 中“跨视图 object interaction / association”的核心逻辑迁移进来。
+
+任务：
+1. 找出 MSG 中：
+   - object association
+   - cross-view attention / matching
+   - memory aggregation
+2. 分析：
+   - 输入是什么（bbox feature？）
+   - 输出是什么（refined object feature？）
+3. 映射到：
+   - refined_obj_bank
+4. 要求：
+   - 保留 MSG 的核心交互逻辑
+   - 允许改写为 Transformer / attention 风格
+   - 保持接口不变
+
+重点：
+这是整个模型最重要的模块之一，不能简化。
+
+任务三、
+现在请填充 query_decoder.py（object queries部分）。
+
+目标：
+把 MSG 的 object feature 处理逻辑，改造成“learnable object queries + memory查询”。
+
+任务：
+1. 找出 MSG 中：
+   - object feature生成方式
+   - object embedding处理
+2. 分析哪些部分可以复用（projection等）
+3. 改造成：
+   - learnable object queries
+   - cross-attention 查询 refined_obj_bank
+4. 输出：
+   - object_node_feat
+   - object_attn
+
+重点：
+- 不允许再用 feature-as-query
+- 必须改成 query → memory
+
+
+任务四、
+现在请填充 place queries部分。
+
+目标：
+从 MSG 的 place feature 逻辑迁移，并改造成 learnable queries。
+
+要求：
+1. 找出 MSG 中 place feature生成方式
+2. 复用 image/global feature处理
+3. 改成：
+   - learnable place queries
+   - 查询 image memory
+   - 融合 object memory
+4. 输出：
+   - place_node_feat
+
+任务五、
+现在请实现 matching.py。
+
+目标：
+实现 object queries 与 GT object 的匹配机制。
+
+要求：
+1. 参考 DETR / MSG supervision
+2. 使用：
+   - query-to-bbox attention
+   - GT bbox sets
+3. 构建 cost matrix
+4. 使用 Hungarian matching
+5. 输出：
+   - matched indices
+   - exist targets
+
+重点：
+这是新模块，但要结合 MSG 数据结构。
+
+任务六、
+现在请填充 edge_heads.py。
+
+目标：
+用 MLP 替代 MSG 的 graph construction。
+
+任务：
+1. 找出 MSG 中：
+   - graph build（similarity + threshold）
+2. 分析输入 feature
+3. 实现：
+   - pp_edge_head
+   - po_edge_head
+4. 输入：
+   - place_node_feat
+   - object_node_feat
+5. 输出：
+   - logits
+
+重点：
+这是“替换模块”，不是复用模块。

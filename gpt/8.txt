@@ -1,0 +1,324 @@
+你现在需要对一个基于 PyTorch 的多视角场景图生成项目进行系统性重构和修复。
+
+项目核心：
+- 当前模型为 RelationalMSG
+- 支持 step1 (AoMSG baseline) / step2 / step3 / step4 渐进实验
+- 目标是验证：
+  1. Alternating Attention
+  2. Learnable Queries
+  3. Scene Graph Head
+
+当前问题：
+代码可以运行，但存在严重的“实验不可信”和“结构混乱”问题。
+
+你的任务是：在不破坏现有接口（train/eval 可运行）的前提下，对代码进行系统重构和修复，使其满足：
+- 实验结果可信
+- 模块边界清晰
+- 后续可扩展
+
+⚠️ 重要约束：
+1. 不允许破坏现有 forward_version = step1/step2/step3/step4 的接口
+2. 不允许删除 baseline（AoMSG）逻辑
+3. 必须保证修改后代码仍然可以训练和评估
+4. 优先保证“实验正确性”而不是“代码美观”
+
+---
+
+# ========================
+# 第一部分：必须优先修复（P0）
+# ========================
+
+## 1. 修复 decoder 和 learnable query 在 forward 中临时创建的问题
+
+问题：
+- ObjectQueryDecoderV2/V3、PlaceQueryDecoderV2/V3 在 forward 中实例化
+- Step3 的 learnable queries 在 forward 中创建
+
+要求：
+- 将所有 decoder 实例移动到 RelationalMSG.__init__
+- 将 learnable queries 定义为 self.obj_queries / self.place_queries
+- forward 中只能调用，不允许 new nn.Module 或 nn.Parameter
+
+输出：
+- 修改后的 RelationalMSG 相关代码
+- 标注改动位置
+
+
+---
+
+## 2. 构建 query-aware 的评估链路（替代旧 AoMSG mapper 上游）
+
+问题：
+- 当前 eval 仍依赖 embeddings + mapper 旧逻辑
+
+要求：
+- 保留 Evaluator（指标层）
+- 新建：
+  - query_eval.py
+  - query_mapper.py
+- 将 query 输出转为 evaluator 可接受的 prediction
+
+输出：
+- query_eval.py
+- query_mapper.py
+- 与旧 eval 的差异说明
+
+
+---
+
+## 3. 重构 RelationalMSG 结构（解耦阶段逻辑）
+
+问题：
+- step1/2/3/4 与 backbone/decoder/loss 全部混在一个类中
+
+要求：
+拆分为逻辑层：
+1. 公共特征层
+   - extract_backbone_roi_features()
+   - refine_multiview_features()
+2. 解码层
+   - decode_step2()
+   - decode_step3()
+   - decode_step4()
+3. loss 层
+   - compute_loss_stepX()
+
+输出：
+- 重构后的类结构（代码框架）
+
+
+---
+
+## 4. 重构 Step3 loss（支持 pure / hybrid 两种模式）
+
+问题：
+- 当前 Step3 = query loss + AoMSG loss 简单相加
+
+要求：
+实现两种模式：
+- pure_query：仅 query-based supervision
+- hybrid：query + AoMSG
+
+通过 config 控制
+
+输出：
+- 新版 compute_loss_step3
+
+
+---
+
+# ========================
+# 第二部分：高优先级修复（P1）
+# ========================
+
+## 5. 重写 HungarianMatcher（matching.py）
+
+问题：
+- 使用 % 运算恢复索引（错误）
+- 强制 .cuda()
+
+要求：
+- 在统一 flatten 空间 [B, V*N] 上构建 GT
+- 删除 % 映射
+- 使用 tensor.device
+
+输出：
+- 重写后的 HungarianMatcher
+- 解释旧实现问题
+
+
+---
+
+## 6. 处理 SepAssociator 隐式依赖
+
+问题：
+- 未明确 import / 定义
+
+要求：
+- 如果存在：补全 import
+- 如果不存在：替换为现有 loss 模块
+
+输出：
+- 修改方案 + 代码
+
+
+---
+
+## 7. 统一 step 语义命名（非常重要）
+
+要求：
+统一语义：
+- step1 = AoMSG baseline
+- step2 = representation enhancement (AA)
+- step3 = learnable query modeling
+- step4 = scene graph extension
+
+修改：
+- 变量名
+- 注释
+- 日志输出
+
+输出：
+- 修改后的关键代码片段
+
+
+---
+
+## 8. 抽取统一输出适配函数
+
+问题：
+- step2/3/4 手动构造 embeddings / predictions
+
+要求：
+新增：
+- build_legacy_compatible_outputs()
+
+输出：
+- 新函数 + 调用替换
+
+
+---
+
+# ========================
+# 第三部分：中优先级优化（P2）
+# ========================
+
+## 9. 增强 EdgeHeads
+
+要求：
+- 支持 mask
+- 屏蔽 self-loop（PP）
+- 保持接口兼容
+
+输出：
+- 修改后的 edge_heads.py
+
+
+---
+
+## 10. 重构 Step4 GT relation 构造
+
+问题：
+- 当前为简化占位逻辑
+
+要求：
+- 根据 rel_labels 严格构造 supervision
+
+输出：
+- 修改后的 compute_loss_step4
+
+
+---
+
+## 11. 统一 bbox 数据流
+
+要求：
+- 明确：
+  - gt_bbox
+  - pred_bbox
+  - detections
+- 新增 config：
+  - bbox_source
+
+输出：
+- 修改建议 + 关键代码
+
+
+---
+
+## 12. 强化 QueryObjectLoss
+
+要求：
+- 严格处理 padding object
+- 对齐 bbox_mask / obj_idx / obj_label
+
+输出：
+- 修改后的核心 loss 代码
+
+
+---
+
+# ========================
+# 第四部分：结构优化（P3）
+# ========================
+
+## 13. 统一 config 设计
+
+要求：
+统一字段：
+- experiment_stage
+- feature_encoder_type
+- query_type
+- graph_head_type
+
+输出：
+- 新 config 设计
+
+
+---
+
+## 14. 统一 train/eval dispatch
+
+要求：
+新增：
+- get_stage_runner()
+
+输出：
+- 修改 train.py / eval.py
+
+
+---
+
+## 15. 模块化 AoMSG baseline
+
+要求：
+- 拆出独立模块
+- 减少主类耦合
+
+输出：
+- 模块划分建议 + 示例代码
+
+
+---
+
+## 16. 增加分析日志（可解释性）
+
+要求：
+记录：
+- attention
+- query usage
+- entropy
+
+输出：
+- 日志模块代码
+
+
+---
+
+# ========================
+# 输出要求（非常重要）
+# ========================
+
+你必须按以下顺序输出：
+
+1. ✅ 修改后的关键代码（不是只描述）
+2. ✅ 每一部分的修改说明
+3. ✅ 如果改动较大，给出“前后结构对比”
+4. ✅ 保证代码可运行（不能只写伪代码）
+5. ✅ 所有新增函数必须完整实现
+
+禁止：
+- 只给建议不写代码
+- 只写伪代码
+- 跳过关键模块（matcher / step3 / eval）
+
+---
+
+# 最终目标
+
+让这个项目达到：
+
+✔ step1/2/3/4 实验严格可对比  
+✔ learnable query 真正被训练  
+✔ eval 不再依赖 AoMSG 假设  
+✔ 结构清晰，便于论文撰写  

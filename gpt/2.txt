@@ -1,0 +1,84 @@
+我正在基于现有 MSG 思路搭建一个新的多视角场景图生成框架。请先不要追求完整细节实现，而是优先帮我搭建“整体工程骨架 + 模块接口 + forward主流程”，保证结构清晰、后续便于逐步填充代码。
+
+【项目目标】
+我要实现一个 query-based relational MSG 框架，整体思路如下：
+
+1. 输入是同一场景的多视角图像。
+2. 使用 backbone 对图像进行编码，得到 image-level features。
+3. 使用 bbox / ROI 从图像特征中提取 region-level bbox features。
+4. 对 bbox features 做跨视图 attention，得到 refined object memory。
+5. 对 image/global features 做跨视图 attention，得到 refined image memory。
+6. 使用固定数量的 learnable object queries 查询 refined object memory，输出：
+   - object_node_feat
+   - object_attn / assignment map
+   - object_exist_logits
+   - optional object_cls_logits
+7. 使用另一组 learnable place queries 查询 refined image memory，并融合 object-aware memory / object nodes，输出：
+   - place_node_feat
+   - optional place_exist_logits
+8. 使用两个 MLP edge heads 显式预测：
+   - place-place edges (pp_logits)
+   - place-object edges (po_logits)
+9. 后续我还会继续扩展：
+   - object query 与 GT object 的 matching
+   - pair proposal network
+   - relation decoder
+所以请现在就为这些模块预留接口，但先不要实现复杂细节。
+
+【当前要求】
+请你为这个项目搭建一个“可运行但细节可占位”的 PyTorch 工程框架。
+
+【你要完成的内容】
+1. 设计推荐的工程目录结构
+2. 给出以下核心文件的初始代码骨架：
+   - models/relational_msg.py
+   - models/backbone.py
+   - models/roi_extractor.py
+   - models/cross_view_encoder.py
+   - models/query_decoder.py
+   - models/edge_heads.py
+   - models/matching.py
+   - models/losses.py
+   - train/train.py
+   - train/eval.py
+3. 在 relational_msg.py 中实现主模型类 RelationalMSG 的完整 forward 骨架，要求把以下变量都明确产出：
+   - bbox_feats
+   - refined_obj_bank
+   - refined_img_bank
+   - object_node_feat
+   - object_attn
+   - object_exist_logits
+   - object_cls_logits
+   - place_node_feat
+   - place_attn
+   - place_exist_logits
+   - pp_logits
+   - po_logits
+4. 所有复杂模块先允许用最简实现 / 占位实现，但接口必须清楚，输入输出 shape 要合理。
+5. matching.py、losses.py 先只写函数骨架和注释，预留后续实现入口。
+6. 要保证整个工程风格统一，命名清晰，方便后续逐步填充。
+
+【重要约束】
+1. 不要把所有逻辑都堆在一个文件里。
+2. 不要省略类定义和函数签名。
+3. 不要只给伪代码，我要“接近可直接保存为 .py 文件”的代码骨架。
+4. 先不要实现复杂训练技巧、复杂 loss、Hungarian 细节、relation decoder 细节。
+5. 先以“框架完整、接口清晰、shape 合理、可扩展”为第一优先级。
+6. 代码必须使用 PyTorch。
+7. 每个文件都要有清晰注释，说明该文件在整个项目中的作用。
+8. 请尽量保持最小但规范，不要为了炫技引入不必要的复杂性。
+
+【输出格式要求】
+请严格按下面格式输出：
+
+第一部分：项目目录结构
+第二部分：逐文件代码骨架
+- 每个文件单独给出
+- 用清晰的分隔标题标出文件路径
+第三部分：模块调用关系说明
+第四部分：下一步建议（告诉我接下来应该优先填充哪个模块）
+
+【补充说明】
+当前阶段我只需要“搭框架”，不是一次性完成全部算法细节。
+请把自己当作一名在搭建可维护 PyTorch 项目骨架的工程师，而不是在写论文描述。
+注意：当前阶段的目标不是“把所有算法做完”，而是“先搭一个清晰、规范、可扩展、便于后续分模块迭代的工程框架”。请避免过度实现，把重点放在模块边界、类接口、forward数据流和文件组织上。

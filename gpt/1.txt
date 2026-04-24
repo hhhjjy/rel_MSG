@@ -1,0 +1,368 @@
+可以。下面我给你三部分：
+
+1. **代码实现导向版**
+2. **论文 Method 图注/方法概述版**
+3. **可直接放进论文的 LaTex 伪代码**
+
+我会尽量和你现在已经明确的思路保持一致：
+
+* backbone 提取图像特征
+* bbox 提取 region 特征
+* bbox / image 分别做跨视图交互
+* object queries 查询 bbox memory，得到 object node candidates
+* place queries 查询 image-level memory，并建议融合 object 信息
+* 用 MLP 预测 PP / PO 边
+* 原始 MSG 确实是用检测框/整图特征作为 query，再做 graph construction；你现在是在把它改成 learnable-query + edge-head 的版本。
+
+---
+
+# 一、代码实现导向版
+
+这个版本按“你后面工程里要有哪些 `.py` 文件 / 类 / 核心接口”来写。
+
+## 1. 项目模块划分建议
+
+```text
+models/
+├── relational_msg.py              # 总模型入口
+├── backbone.py                    # 视觉 backbone
+├── roi_extractor.py               # bbox 特征提取
+├── cross_view_encoder.py          # bbox/image 跨视图编码
+├── query_decoder.py               # object/place query decoder
+├── edge_heads.py                  # PP / PO edge heads
+├── pair_proposal.py               # PPN（以后接 OO 时用）
+├── relation_decoder.py            # relation decoder（以后接 OO 时用）
+├── matching.py                    # query 与 GT node 的匹配
+└── losses.py                      # 所有 loss
+
+train/
+├── train.py
+├── eval.py
+└── metrics.py
+```
+
+---
+
+## 2. 总模型入口：`relational_msg.py`
+
+```python
+class RelationalMSG(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+
+        # 1) visual encoder
+        self.backbone = build_backbone(cfg)
+        self.detector = build_detector(cfg)
+        self.roi_extractor = build_roi_extractor(cfg)
+
+        # 2) cross-view encoders
+        self.obj_cross_view = CrossViewEncoder(cfg.obj_cross_view)
+        self.img_cross_view = CrossViewEncoder(cfg.img_cross_view)
+
+        # 3) learnable queries
+        self.object_queries = nn.Parameter(
+            torch.randn(cfg.num_object_queries, cfg.hidden_dim)
+        )
+        self.place_queries = nn.Parameter(
+            torch.randn(cfg.num_place_queries, cfg.hidden_dim)
+        )
+
+        # 4) decoders
+        self.object_decoder = QueryDecoder(cfg.object_decoder)
+        self.place_decoder = QueryDecoder(cfg.place_decoder)
+
+        # 5) node heads
+        self.object_exist_head = MLP(cfg.hidden_dim, cfg.hidden_dim, 1)
+        self.object_cls_head = MLP(cfg.hidden_dim, cfg.hidden_dim, cfg.num_obj_classes) \
+            if cfg.use_obj_cls else None
+
+        self.place_exist_head = MLP(cfg.hidden_dim, cfg.hidden_dim, 1) \
+            if cfg.use_place_exist else None
+
+        # 6) edge heads
+        self.pp_edge_head = EdgeMLP(cfg.hidden_dim)
+        self.po_edge_head = EdgeMLP(cfg.hidden_dim)
+
+        # 7) optional future modules
+        self.ppn = PairProposalNetwork(cfg.ppn) if cfg.use_ppn else None
+        self.relation_decoder = RelationDecoder(cfg.rel_decoder) if cfg.use_rel_decoder else None
+
+    def forward(self, images, targets=None):
+        image_feats = self.backbone(images)
+        detections = self.detector(images)
+
+        bbox_feats, bbox_meta = self.roi_extractor(image_feats, detections)
+        global_feats = build_global_tokens(image_feats)
+
+        refined_obj_bank = self.obj_cross_view(bbox_feats, bbox_meta)
+        refined_img_bank = self.img_cross_view(global_feats)
+
+        B = refined_obj_bank.shape[0]
+
+        # object queries
+        obj_q = self.object_queries.unsqueeze(0).repeat(B, 1, 1)
+        object_node_feat, object_attn = self.object_decoder(
+            query=obj_q,
+            memory=refined_obj_bank,
+            return_attention=True
+        )
+        object_exist_logits = self.object_exist_head(object_node_feat).squeeze(-1)
+        object_cls_logits = self.object_cls_head(object_node_feat) if self.object_cls_head is not None else None
+
+        # place queries
+        place_q = self.place_queries.unsqueeze(0).repeat(B, 1, 1)
+        fused_place_memory = fuse_place_memory(refined_img_bank, object_node_feat)
+        place_node_feat, place_attn = self.place_decoder(
+            query=place_q,
+            memory=fused_place_memory,
+            return_attention=True
+        )
+        place_exist_logits = self.place_exist_head(place_node_feat).squeeze(-1) \
+            if self.place_exist_head is not None else None
+
+        # graph edges
+        pp_logits = build_pp_edges(place_node_feat, self.pp_edge_head)
+        po_logits = build_po_edges(place_node_feat, object_node_feat, self.po_edge_head)
+
+        outputs = {
+            "bbox_feats": bbox_feats,
+            "refined_obj_bank": refined_obj_bank,
+            "refined_img_bank": refined_img_bank,
+            "object_node_feat": object_node_feat,
+            "object_attn": object_attn,
+            "object_exist_logits": object_exist_logits,
+            "object_cls_logits": object_cls_logits,
+            "place_node_feat": place_node_feat,
+            "place_attn": place_attn,
+            "place_exist_logits": place_exist_logits,
+            "pp_logits": pp_logits,
+            "po_logits": po_logits,
+        }
+
+        if targets is not None:
+            losses = compute_total_losses(outputs, targets, cfg=None)
+            outputs["losses"] = losses
+
+        return outputs
+```
+
+---
+
+## 3. 跨视图编码：`cross_view_encoder.py`
+
+```python
+class CrossViewEncoder(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.layers = nn.ModuleList([
+            TransformerEncoderLayer(
+                d_model=cfg.hidden_dim,
+                nhead=cfg.num_heads,
+                dim_feedforward=cfg.ffn_dim,
+                batch_first=True
+            )
+            for _ in range(cfg.num_layers)
+        ])
+
+    def forward(self, x, meta=None):
+        # x: [B, N, C]
+        if meta is not None:
+            x = x + build_view_encoding(meta, x.device, x.dtype, x.shape[-1])
+        for layer in self.layers:
+            x = layer(x)
+        return x
+```
+
+---
+
+## 4. Query Decoder：`query_decoder.py`
+
+```python
+class QueryDecoder(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.layers = nn.ModuleList([
+            TransformerDecoderLayer(
+                d_model=cfg.hidden_dim,
+                nhead=cfg.num_heads,
+                dim_feedforward=cfg.ffn_dim,
+                batch_first=True
+            )
+            for _ in range(cfg.num_layers)
+        ])
+
+    def forward(self, query, memory, return_attention=False):
+        x = query
+        attn_map = None
+
+        for layer in self.layers:
+            x = layer(tgt=x, memory=memory)
+
+        if return_attention:
+            # 简化写法；真实实现里可从自定义 cross-attn 层导出注意力
+            attn_map = torch.matmul(x, memory.transpose(-1, -2))
+            attn_map = attn_map.softmax(dim=-1)
+
+        return x, attn_map
+```
+
+---
+
+## 5. Edge Heads：`edge_heads.py`
+
+```python
+class EdgeMLP(nn.Module):
+    def __init__(self, hidden_dim):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(hidden_dim * 4, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1)
+        )
+
+    def forward(self, pair_feat):
+        return self.net(pair_feat)
+
+def build_pp_edges(place_node_feat, edge_head):
+    B, Np, C = place_node_feat.shape
+    a = place_node_feat.unsqueeze(2).expand(B, Np, Np, C)
+    b = place_node_feat.unsqueeze(1).expand(B, Np, Np, C)
+    pair_feat = torch.cat([a, b, a * b, torch.abs(a - b)], dim=-1)
+    logits = edge_head(pair_feat).squeeze(-1)
+    logits = 0.5 * (logits + logits.transpose(1, 2))
+    return logits
+
+def build_po_edges(place_node_feat, object_node_feat, edge_head):
+    B, Np, C = place_node_feat.shape
+    No = object_node_feat.shape[1]
+    a = place_node_feat.unsqueeze(2).expand(B, Np, No, C)
+    b = object_node_feat.unsqueeze(1).expand(B, Np, No, C)
+    pair_feat = torch.cat([a, b, a * b, torch.abs(a - b)], dim=-1)
+    logits = edge_head(pair_feat).squeeze(-1)
+    return logits
+```
+
+---
+
+## 6. Matching：`matching.py`
+
+这部分就是你前面重点问的 “node candidates 如何和真实 node 对齐”。
+
+```python
+def hungarian_match_object_queries(object_attn, object_exist_logits, gt_obj_bbox_sets):
+    """
+    object_attn: [B, Nq, Nb]
+    gt_obj_bbox_sets: list of length B
+        each item: list of GT objects
+        each GT object is a set/list of bbox indices
+
+    返回:
+        matched_indices: list[(pred_ids, gt_ids)]
+    """
+    matched_indices = []
+
+    for b in range(len(gt_obj_bbox_sets)):
+        attn = object_attn[b]                 # [Nq, Nb]
+        exist = object_exist_logits[b].sigmoid()  # [Nq]
+        gt_sets = gt_obj_bbox_sets[b]
+
+        num_queries = attn.shape[0]
+        num_gt = len(gt_sets)
+
+        cost = torch.zeros(num_queries, num_gt, device=attn.device)
+
+        for i in range(num_queries):
+            for j, gt_bbox_ids in enumerate(gt_sets):
+                overlap = attn[i, gt_bbox_ids].sum()
+                cost[i, j] = -(overlap + 0.1 * exist[i])
+
+        pred_ids, gt_ids = linear_sum_assignment_torch(cost)
+        matched_indices.append((pred_ids, gt_ids))
+
+    return matched_indices
+```
+
+---
+
+## 7. Losses：`losses.py`
+
+```python
+def compute_total_losses(outputs, targets, cfg=None):
+    losses = {}
+
+    matched_indices = hungarian_match_object_queries(
+        outputs["object_attn"],
+        outputs["object_exist_logits"],
+        targets["gt_obj_bbox_sets"]
+    )
+
+    target_exist = build_exist_targets(
+        outputs["object_exist_logits"].shape,
+        matched_indices
+    )
+    losses["loss_obj_exist"] = F.binary_cross_entropy_with_logits(
+        outputs["object_exist_logits"], target_exist
+    )
+
+    if outputs["object_cls_logits"] is not None and "gt_obj_labels" in targets:
+        target_cls = build_cls_targets(
+            outputs["object_cls_logits"].shape,
+            matched_indices,
+            targets["gt_obj_labels"]
+        )
+        losses["loss_obj_cls"] = F.cross_entropy(
+            outputs["object_cls_logits"].transpose(1, 2),
+            target_cls
+        )
+
+    losses["loss_obj_assign"] = assignment_consistency_loss(
+        outputs["object_attn"],
+        matched_indices,
+        targets["gt_obj_bbox_sets"]
+    )
+
+    if outputs["place_exist_logits"] is not None and "gt_place_exist" in targets:
+        losses["loss_place_exist"] = F.binary_cross_entropy_with_logits(
+            outputs["place_exist_logits"],
+            targets["gt_place_exist"]
+        )
+
+    losses["loss_pp"] = F.binary_cross_entropy_with_logits(
+        outputs["pp_logits"], targets["gt_pp_adj"].float()
+    )
+
+    losses["loss_po"] = F.binary_cross_entropy_with_logits(
+        outputs["po_logits"], targets["gt_po_adj"].float()
+    )
+
+    losses["loss_total"] = (
+        1.0 * losses.get("loss_obj_exist", 0.0)
+        + 1.0 * losses.get("loss_obj_cls", 0.0)
+        + 1.0 * losses.get("loss_obj_assign", 0.0)
+        + 1.0 * losses.get("loss_place_exist", 0.0)
+        + 1.0 * losses["loss_pp"]
+        + 1.0 * losses["loss_po"]
+    )
+
+    return losses
+```
+
+---
+
+## 8. 训练入口：`train.py`
+
+```python
+for images, targets in train_loader:
+    outputs = model(images, targets)
+    loss = outputs["losses"]["loss_total"]
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    log_dict = {k: v.item() for k, v in outputs["losses"].items()}
+    logger.update(log_dict)
+```
+

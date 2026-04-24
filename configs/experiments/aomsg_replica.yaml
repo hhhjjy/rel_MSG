@@ -1,0 +1,66 @@
+# sample style training script
+dataset_path: '/root/autodl-tmp/dataset/Replica'
+device: 0
+pp_threshold: 0.3
+object_threshold: 0.2
+
+# coefficients for multitasking loss
+loss_params:
+  pr: 1.0
+  obj: 1.0
+  tcr: 0.0
+  mean: 0.0
+
+eval_split: val
+train_split: train
+# for train
+output_dir: './exp-results/Replica'
+output_file: 'train'
+wandb: True
+
+# if resume training from a chkpt
+resume: False
+resume_path: '/root/autodl-tmp/MSG/exp-results/aomsg/2026-04-05_21-02-22/checkpoints/6-step300+.pth' # EXAMPLE: './exp-results/aomsg/2025-03-04_00-05-14/checkpoints/29-step22470+.pth'
+# for eval
+eval_output_dir: './exp-results/eval' # this is specific to trained checkpoints
+eval_chkpt: /root/autodl-tmp/MSG/exp-results/aomsg/2026-04-06_16-07-10/checkpoints/38-step1716+.pth #null for no checkpoint
+save_every: False # if save specific results for every video
+eval_step: 30 # this is evaluation frequency during training
+
+learning_rate: 0.00002 # 5e-5
+num_epochs: 10000
+warmup_epochs: 3
+warmup: no # cos
+# vis_det: True
+num_workers: 16
+train_bs: 512
+bs_video: 12
+eval_bs: 256 # debug test
+
+log_every: 1
+chkpt_every: 30
+
+obj_embedder:
+  model: "dinov2-base" #"dinov2-small", "convnext-tiny-224", #'resnet50', # "dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"
+  weights: DEFAULT
+  freeze: True
+  output_type: feature # doesn't matter if embedding is cropped from image features BUT matters for sepMSG
+
+place_embedder:
+  model: "dinov2-base" #"convnext-tiny", #'resnet50', # "dinov2-base", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"
+  weights: DEFAULT
+  freeze: True
+  output_type: feature # mean, cls, feature
+
+associator:
+  model: "AoMSG-S-4" # "AoMSG-S-2"
+  object_dim: 768 # FYI resnet18=512, dinov2-small=384, dinov2-base=768
+  place_dim: 768
+  output_dim: 1024
+
+
+# loss terms
+pr_loss: mse
+obj_loss: bce
+pos_weight: 10
+pp_weight: 1
