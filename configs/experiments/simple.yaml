@@ -25,7 +25,7 @@ resume_path: '/root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/
 eval_output_dir: './exp-results/eval' # this is specific to trained checkpoints
 eval_chkpt: /root/autodl-tmp/MSG/exp-results/3rscan_split/2026-04-16_13-11-13/checkpoints/514-step21600+.pth #null for no checkpoint
 save_every: False # if save specific results for every video
-eval_step: 100 # this is evaluation frequency during training
+eval_step: 100000 # this is evaluation frequency during training
 
 learning_rate: 0.00002 # 5e-5
 num_epochs: 10000
@@ -33,10 +33,10 @@ warmup_epochs: 3
 warmup: no # cos
 # vis_det: True
 num_workers: 1
-train_bs: 8
+train_bs: 6
 bs_video: 2
-eval_bs: 4 # debug test
-stage: 'step2'
+eval_bs: 6 # debug test
+stage: 'step3'
 log_every: 1
 chkpt_every: 300
 

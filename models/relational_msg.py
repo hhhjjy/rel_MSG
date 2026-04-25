@@ -30,10 +30,10 @@ class FeatureExtractor(nn.Module):
     输入: images, bboxes
     输出: 根据模式返回不同格式的特征
     """
-    def __init__(self, config, hidden_dim):
+    def __init__(self, config, hidden_dim, feature_refine_method):
         super(FeatureExtractor, self).__init__()
-        self.feature_refine_method = config.get('feature_refine_method', 'aomsg')
         self.hidden_dim = hidden_dim
+        self.feature_refine_method = feature_refine_method
         
         self.backbone = Backbone(
             model_type=config['backbone']['model_type'] if config and 'backbone' in config else 'dinov2-base',
@@ -45,21 +45,78 @@ class FeatureExtractor(nn.Module):
             roi_size=1,
             image_size=config['model_image_size'] if config and 'model_image_size' in config else (224, 224),
         )
-        
-        # CrossViewEncoder (用于 vggt 和 aomsg_refined 模式)
-        self.obj_cross_view = CrossViewEncoder(dim=hidden_dim)
-        self.img_cross_view = CrossViewEncoder(dim=hidden_dim)
-        
+
+        # box embedding
+        self.box_emb = nn.Linear(4, hidden_dim, bias=False)
+        self.whole_box = nn.Parameter(torch.tensor([0, 0, 224, 224], dtype=torch.float32), requires_grad=False)
+
+        # input adaptor
+        self.object_proj = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.place_proj = nn.Linear(hidden_dim, hidden_dim, bias=False)
+
         # AssociationModel (用于 aomsg 和 aomsg_refined 模式)
-        if self.feature_refine_method in ['aomsg', 'aomsg_refined']:
+        if self.feature_refine_method == 'aomsg':
             loss_keys = ["pr_loss", "obj_loss", "temperature", "alpha", "gamma", "pos_weight", "pp_weight"]
             for k in loss_keys:
                 if k in config:
                     config['associator'][k] = config[k]
             self.association_model = Asso_models[config['associator']['model']](**config['associator'])
+        elif self.feature_refine_method == 'aomsg_refined':
+            loss_keys = ["pr_loss", "obj_loss", "temperature", "alpha", "gamma", "pos_weight", "pp_weight"]
+            for k in loss_keys:
+                if k in config:
+                    config['associator'][k] = config[k]
+            self.association_model = Asso_models[config['associator']['model']](**config['associator'])
+            self.obj_cross_view = CrossViewEncoder(dim=hidden_dim)
         else:
             self.association_model = None
+            self.cross_view = CrossViewEncoder(dim=hidden_dim)
     
+    def _compute_conditional_query(self, obj_box, obj_embd, place_emb, obj_mask):
+        """
+        Args:
+            obj_box:  [B, V, K, 4]
+            obj_embd: [B, V, K, Ho]
+            place_emb: [B, V, N, D]
+        Returns:
+            query:      [B, V, K+1, C]  🔥 要求的输出形状
+            query_mask: [B, V, K+1]    🔥 要求的输出形状
+            place_feat: [B, V, N, C]
+        """
+        # 1. 保存原始 Batch/Video 维度（最后reshape回去用）
+        B, V, K, Ho = obj_embd.shape
+        N = place_emb.shape[2]  # place特征的序列长度
+        C = self.hidden_dim
+
+        # 2. 临时展平 B&V 做计算（兼容原逻辑）
+        obj_embd_flat = obj_embd.view(B*V, K, Ho)      # [B*V, K, Ho]
+        obj_box_flat = obj_box.view(B*V, K, 4)        # [B*V, K, 4]
+        place_emb_flat = place_emb.view(B*V, N, -1)    # [B*V, N, D]
+        obj_mask_flat = obj_mask.view(B*V, K)
+
+        place_mask = torch.ones(B*V, 1, dtype = obj_mask.dtype, device = obj_mask.device)
+        query_mask_flat = torch.cat([place_mask, obj_mask_flat], dim=1)
+
+        # 3. 原核心计算逻辑（完全不变）
+        # BBox编码
+        whole_box_expanded = self.whole_box.unsqueeze(0).expand(B*V, 1, -1)
+        query_flat = torch.cat([whole_box_expanded, obj_box_flat], dim=1) / 224.0
+        query_flat = self.box_emb(query_flat)  # [B*V, K+1, C]
+
+        # 特征投影
+        object_feat = self.object_proj(obj_embd_flat)
+        place_feat_flat = self.place_proj(place_emb_flat)
+
+        # 条件融合
+        conditioning = torch.cat([place_feat_flat.mean(dim=1, keepdim=True), object_feat], dim=1)
+        query_flat = query_flat + conditioning
+
+        # 4. 🔥 关键：恢复为 [B, V, ...] 原始形状
+        query = query_flat.view(B, V, K+1, C)
+        query_mask = query_mask_flat.view(B, V, K+1)
+
+        return query, query_mask
+
     def forward(self, images_per_scene, bboxes_pos, bboxes_masks, use_cross_view_refine=False):
         """
         Args:
@@ -83,21 +140,17 @@ class FeatureExtractor(nn.Module):
             assert self.association_model is not None, "association_model is None"
             # Step 1: 直接使用 association_model
             if use_cross_view_refine:
-                # Step 2: 先使用 obj_cross_view refine，再传给 association_model
-                refined_bbox_feats = self.obj_cross_view(bbox_feats, None, bboxes_pos, bboxes_masks)
-                results = self.association_model(refined_bbox_feats, img_feats, bboxes_pos)
-                return results, img_feats, bbox_feats, refined_bbox_feats
-            else:
-                # Step 1: 直接使用原始 bbox_feats
-                results = self.association_model(bbox_feats, img_feats, bboxes_pos)
-                return results, img_feats, bbox_feats
+                bbox_feats = self.obj_cross_view(bbox_feats, None, bboxes_pos, bboxes_masks)
+            results = self.association_model(bbox_feats, img_feats, bboxes_pos)
+            return results, img_feats, bbox_feats
         else:
+            query, query_mask = self._compute_conditional_query(bboxes_pos, bbox_feats, img_feats, bboxes_masks)
+
             # vggt 模式 (Step 3/4)
-            refined_obj_bank = self.obj_cross_view(bbox_feats, img_feats, bboxes_pos, bboxes_masks)
-            dummy_bboxes = torch.zeros(B, V, 1, 4, device=bboxes_pos.device, dtype=bboxes_pos.dtype)
-            dummy_masks = torch.ones(B, V, 1, device=bboxes_pos.device, dtype=torch.bool)
-            img_global_feats = img_feats.mean(dim=2, keepdim=True)
-            refined_img_bank = self.img_cross_view(img_global_feats, img_feats, dummy_bboxes, dummy_masks).squeeze(2)
+            refined_feat_bank = self.cross_view(query, None, None, query_mask)
+
+            refined_obj_bank = refined_feat_bank[:, :, 1:, :]
+            refined_img_bank = refined_feat_bank[:, :, 0, :]
             return refined_obj_bank, refined_img_bank, img_feats, bbox_feats
 
 
@@ -111,54 +164,57 @@ class QueryDecoderLayer(nn.Module):
         self.stage = config.get('stage', 'step1')  # step1, step2, step3, step4
         
         # Baseline V1 Decoders
-        self.obj_decoder_v1 = ObjectQueryDecoder(
+        self.obj_decoder = ObjectQueryDecoder(
             dim=hidden_dim, num_queries=num_obj_queries, num_classes=num_obj_classes,
         )
-        self.place_decoder_v1 = PlaceQueryDecoder(
-            dim=hidden_dim, num_queries=num_place_queries,
-        )
+        # self.place_decoder_v1 = PlaceQueryDecoder(
+        #     dim=hidden_dim, num_queries=num_place_queries,
+        # )
         
-        # Step 2 Decoders (Alternating Attention)
-        self.obj_decoder_v2 = ObjectQueryDecoderV2(
-            dim=hidden_dim, num_queries=num_obj_queries, num_classes=num_obj_classes,
-        )
-        self.place_decoder_v2 = PlaceQueryDecoderV2(
-            dim=hidden_dim, num_queries=num_place_queries,
-        )
+        # # Step 2 Decoders (Alternating Attention)
+        # self.obj_decoder_v2 = ObjectQueryDecoderV2(
+        #     dim=hidden_dim, num_queries=num_obj_queries, num_classes=num_obj_classes,
+        # )
+        # self.place_decoder_v2 = PlaceQueryDecoderV2(
+        #     dim=hidden_dim, num_queries=num_place_queries,
+        # )
         
-        # Step 3/4 Decoders (Learnable Queries + QueryRefiner + AA)
-        self.obj_decoder_v3 = ObjectQueryDecoderV3(
-            dim=hidden_dim, num_queries=num_obj_queries, num_classes=num_obj_classes,
-        )
-        self.place_decoder_v3 = PlaceQueryDecoderV3(
-            dim=hidden_dim, num_queries=num_place_queries,
-        )
+        # # Step 3/4 Decoders (Learnable Queries + QueryRefiner + AA)
+        # self.obj_decoder_v3 = ObjectQueryDecoderV3(
+        #     dim=hidden_dim, num_queries=num_obj_queries, num_classes=num_obj_classes,
+        # )
+        # self.place_decoder_v3 = PlaceQueryDecoderV3(
+        #     dim=hidden_dim, num_queries=num_place_queries,
+        # )
         
-        # Step 3/4 Learnable Queries
-        self.obj_queries = nn.Parameter(torch.randn(num_obj_queries, hidden_dim))
-        self.place_queries = nn.Parameter(torch.randn(num_place_queries, hidden_dim))
+        # # Step 3/4 Learnable Queries
+        # self.obj_queries = nn.Parameter(torch.randn(num_obj_queries, hidden_dim))
+        # self.place_queries = nn.Parameter(torch.randn(num_place_queries, hidden_dim))
     
     def forward(self, refined_obj_bank, refined_img_bank, bboxes_masks=None, stage=None):
         stage = stage or self.stage
         B = refined_obj_bank.shape[0]
         
-        if stage in ['step1', 'amosg']:
-            object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder_v1(refined_obj_bank)
-            place_node_feat, place_attn, place_exist_logits = self.place_decoder_v1(refined_img_bank, object_node_feat)
-        elif stage == 'step2':
-            object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder_v2(refined_obj_bank, bbox_mask=bboxes_masks)
-            place_node_feat, place_attn, place_exist_logits = self.place_decoder_v2(refined_img_bank, object_node_feat, bbox_mask=None)
-        elif stage in ['step3', 'step4']:
-            obj_queries_batch = self.obj_queries.unsqueeze(0).expand(B, -1, -1)
-            object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder_v3(
-                obj_queries_batch, refined_obj_bank, bbox_mask=bboxes_masks
-            )
-            place_queries_batch = self.place_queries.unsqueeze(0).expand(B, -1, -1)
-            place_node_feat, place_attn, place_exist_logits = self.place_decoder_v3(
-                place_queries_batch, refined_img_bank, object_node_feat, bbox_mask=None
-            )
-        else:
-            raise ValueError(f"Unknown stage: {stage}")
+        object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder(refined_obj_bank)
+        # place_node_feat, place_attn, place_exist_logits = self.place_decoder(refined_img_bank, object_node_feat)
+
+        # if stage in ['step1', 'amosg']:
+        #     object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder_v1(refined_obj_bank)
+        #     place_node_feat, place_attn, place_exist_logits = self.place_decoder_v1(refined_img_bank, object_node_feat)
+        # elif stage == 'step2':
+        #     object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder_v2(refined_obj_bank, bbox_mask=bboxes_masks)
+        #     place_node_feat, place_attn, place_exist_logits = self.place_decoder_v2(refined_img_bank, object_node_feat, bbox_mask=None)
+        # elif stage in ['step3', 'step4']:
+        #     obj_queries_batch = self.obj_queries.unsqueeze(0).expand(B, -1, -1)
+        #     object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder_v3(
+        #         obj_queries_batch, refined_obj_bank, bbox_mask=bboxes_masks
+        #     )
+        #     place_queries_batch = self.place_queries.unsqueeze(0).expand(B, -1, -1)
+        #     place_node_feat, place_attn, place_exist_logits = self.place_decoder_v3(
+        #         place_queries_batch, refined_img_bank, object_node_feat, bbox_mask=None
+        #     )
+        # else:
+        #     raise ValueError(f"Unknown stage: {stage}")
         
         return {
             'object_node_feat': object_node_feat,
@@ -199,67 +255,99 @@ class RelationalMSG(nn.Module):
         self.num_views = config.get('num_views', 4)
         self.num_bboxes_per_view = config.get('num_bboxes_per_view', 20)
         self.stage = config.get('stage', 'step1')
-        if self.stage == 'step1':
+        
+        # 根据 stage 设置 feature_refine_method
+        if self.stage in ['step1', 'amosg']:
             self.feature_refine_method = 'aomsg'
         elif self.stage == 'step2':
             self.feature_refine_method = 'aomsg_refined'
+        else:
+            self.feature_refine_method = 'vggt'
         
-        # 1. 特征提取层
-        self.feature_extractor = FeatureExtractor(config, self.hidden_dim)
+        # 1. 特征提取层 (所有 stage 都需要)
+        self.feature_extractor = FeatureExtractor(config, self.hidden_dim, self.feature_refine_method)
+
+        if self.stage in ['step3']:
+            self.obj_decoder = ObjectQueryDecoder(
+                dim=self.hidden_dim, num_queries=self.num_obj_queries, num_classes=self.num_obj_classes,
+            )
+            self.query_view_proj = nn.Sequential(
+                nn.Linear(3 * self.hidden_dim, self.hidden_dim),
+                nn.ReLU(inplace=True),
+                nn.Linear(self.hidden_dim, self.hidden_dim),
+            )
+            self.vis_pred_head = nn.Sequential(
+                nn.Linear(3 * self.hidden_dim, self.hidden_dim),
+                nn.ReLU(inplace=True),
+                nn.Linear(self.hidden_dim, 1),
+            )
+            self.place_affinity_mlp = nn.Sequential(
+                nn.Linear(self.hidden_dim, self.hidden_dim),
+                nn.LayerNorm(self.hidden_dim),
+                nn.ReLU(),
+                nn.Linear(self.hidden_dim, 1)
+            )
         
-        # 2. 查询解码层
-        self.query_decoder = QueryDecoderLayer(
-            config, self.hidden_dim, self.num_obj_queries, 
-            self.num_place_queries, self.num_obj_classes
-        )
+        # # 2. 查询解码层 (仅 Step 3/4 需要)
+        # if self.stage in ['step3', 'step4']:
+        #     self.query_decoder = QueryDecoderLayer(
+        #         config, self.hidden_dim, self.num_obj_queries, 
+        #         self.num_place_queries, self.num_obj_classes
+        #     )
+        # else:
+        #     self.query_decoder = None
         
-        # 3. 边预测层
-        self.edge_heads = EdgeHeads(
-            dim=self.hidden_dim,
-            num_edge_types=self.num_edge_types,
-        )
+        # # 3. 边预测层 (仅 Step 3/4 需要)
+        # if self.stage in ['step3', 'step4']:
+        #     self.edge_heads = EdgeHeads(
+        #         dim=self.hidden_dim,
+        #         num_edge_types=self.num_edge_types,
+        #     )
+        # else:
+        #     self.edge_heads = None
         
-        # 4. 场景图预测层 (Step 4)
-        num_relations = config.get('num_relations', 56)
-        num_rel_queries = config.get('num_rel_queries', 50)
-        self.scene_graph_head = SceneGraphHead(
-            num_classes=self.num_obj_classes,
-            num_relations=num_relations,
-            num_obj_query=self.num_obj_queries,
-            num_rel_query=num_rel_queries,
-            feat_channels=self.hidden_dim,
-        )
-        self.use_scene_graph = config.get('use_scene_graph', False)
+        # # 4. 场景图预测层 (仅 Step 4 需要)
+        # if self.stage == 'step4':
+        #     num_relations = config.get('num_relations', 56)
+        #     num_rel_queries = config.get('num_rel_queries', 50)
+        #     self.scene_graph_head = SceneGraphHead(
+        #         num_classes=self.num_obj_classes,
+        #         num_relations=num_relations,
+        #         num_obj_query=self.num_obj_queries,
+        #         num_rel_query=num_rel_queries,
+        #         feat_channels=self.hidden_dim,
+        #     )
+        #     self.use_scene_graph = True
+        # else:
+        #     self.scene_graph_head = None
+        #     self.use_scene_graph = False
         
-        # 5. Loss 模块
-        # 为 Step 2/3 创建独立的 loss 模块
-        # self.step_loss_module = SepAssociator(
-        #     object_model='identity',
-        #     place_model='identity',
-        #     object_dim=self.hidden_dim,
-        #     place_dim=self.hidden_dim,
-        #     output_dim=self.hidden_dim,
-        #     model='SepMSG-direct',
-        #     pr_loss='mse',
-        #     obj_loss='bce',
-        #     pos_weight=1.0,
-        #     pp_weight=1.0,
-        # )
+        # # 5. Loss 模块
+        # # 匹配器 (Step 3/4 需要)
+        # if self.stage in ['step3', 'step4']:
+        #     self.matcher = HungarianMatcher(cost_exist=1.0, cost_attn=1.0)
+        # else:
+        #     self.matcher = None
         
-        # 匹配器
-        self.matcher = HungarianMatcher(cost_exist=1.0, cost_attn=1.0)
-        self.aomsg_matcher = AOMSGMatcher()
+        # # AOMSG 匹配器 (Step 1/2 需要)
+        # if self.stage in ['step1', 'amosg', 'step2']:
+        #     self.aomsg_matcher = AOMSGMatcher()
+        # else:
+        #     self.aomsg_matcher = None
         
-        # Step 3: Object-level Query Loss
-        lq_config = config.get('learnable_queries', {})
-        self.query_object_loss = QueryObjectLoss(
-            cost_cls=lq_config.get('cost_cls', 1.0),
-            cost_attn=lq_config.get('cost_attn', 1.0),
-            weight_cls=lq_config.get('weight_cls', 1.0),
-            weight_attn=lq_config.get('weight_attn', 1.0),
-            weight_exist=lq_config.get('weight_exist', 1.0),
-            weight_bbox=lq_config.get('weight_bbox', 0.0),
-        )
+        # # Step 3: Object-level Query Loss (仅 Step 3/4 需要)
+        # if self.stage in ['step3', 'step4']:
+        #     lq_config = config.get('learnable_queries', {})
+        #     self.query_object_loss = QueryObjectLoss(
+        #         cost_cls=lq_config.get('cost_cls', 1.0),
+        #         cost_attn=lq_config.get('cost_attn', 1.0),
+        #         weight_cls=lq_config.get('weight_cls', 1.0),
+        #         weight_attn=lq_config.get('weight_attn', 1.0),
+        #         weight_exist=lq_config.get('weight_exist', 1.0),
+        #         weight_bbox=lq_config.get('weight_bbox', 0.0),
+        #     )
+        # else:
+        #     self.query_object_loss = None
 
     def _extract_common_features(self, images, bboxes_infos):
         """
@@ -279,15 +367,9 @@ class RelationalMSG(nn.Module):
         use_cross_view_refine = (self.stage == 'step2')
         feat_result = self.feature_extractor(images_per_scene, bboxes_pos, bboxes_masks, use_cross_view_refine=use_cross_view_refine)
         
-        if self.feature_refine_method == 'aomsg':
+        if self.stage in ['step1', 'amosg', 'step2']:
             # Step 1: (results, img_feats, bbox_feats)
             results, img_feats, bbox_feats = feat_result
-            refined_obj_bank = results.get('embeddings')
-            refined_img_bank = results.get('place_embeddings')
-            extra_outputs = results
-        elif self.feature_refine_method == 'aomsg_refined':
-            # Step 2: (results, img_feats, bbox_feats, refined_bbox_feats)
-            results, img_feats, bbox_feats, refined_bbox_feats = feat_result
             refined_obj_bank = results.get('embeddings')
             refined_img_bank = results.get('place_embeddings')
             extra_outputs = results
@@ -489,38 +571,135 @@ class RelationalMSG(nn.Module):
         return results
 
     def forward_step3(self, images, bboxes_infos, bbox_masks=None):
-        """
-        Step 3: Learnable Queries + QueryRefiner + Alternating Attention + Decoder
-        使用解耦后的 QueryDecoderLayer (自动使用 V3 + learnable queries)
-        """
+
         # 1. 公共特征提取
         features = self._extract_common_features(images, bboxes_infos)
         
-        # 2. Query 解码 (QueryDecoderLayer 自动使用 V3 + learnable queries)
-        decoder_outputs = self.query_decoder(
-            features['refined_obj_bank'], 
-            features['refined_img_bank'],
-            bboxes_masks=features['bboxes_masks'],
-            stage='step3'
-        )
-        
-        # 3. Edge Head 预测
-        edge_outputs = self.edge_heads(
-            decoder_outputs['place_node_feat'],
-            decoder_outputs['object_node_feat']
-        )
+        refined_box_bank = features['refined_obj_bank'].reshape(features['refined_obj_bank'].shape[0], -1, features['refined_obj_bank'].shape[-1])
+        refined_img_bank = features['refined_img_bank'].reshape(features['refined_img_bank'].shape[0], -1, features['refined_img_bank'].shape[-1])
+        B, N_b, D = refined_box_bank.shape  
+        _, N_p, _ = refined_img_bank.shape
+        N_q = self.num_obj_queries
 
-        # 4. 构建统一兼容输出
-        results = self.build_legacy_compatible_outputs(
-            object_node_feat=decoder_outputs['object_node_feat'],
-            place_node_feat=decoder_outputs['place_node_feat'],
-            bboxes_infos=bboxes_infos,
-            decoder_outputs=decoder_outputs,
-            edge_outputs=edge_outputs,
-            bbox_feats_flat=features['bbox_feats_flat'],
+        # N_b bbox数量，N_p place数量，N_q query数量
+        # 2. Object Query 解码
+        object_node_feat, object_attn, object_exist_logits, object_cls_logits = self.obj_decoder(
+            refined_box_bank,
+            bboxes_masks=features['bboxes_masks'].reshape(features['bboxes_masks'].shape[0], -1),
         )
+        bbox_tokens = features['refined_obj_bank']
+        # Place之间的位置关系
+        img_diff = refined_img_bank.unsqueeze(1) - refined_img_bank.unsqueeze(2)
+        place_affinity_logits = self.place_affinity_mlp(img_diff).squeeze(-1) # [B, N_p, N_p]
+        PP_matrix = torch.softmax(place_affinity_logits, dim=-1)
 
+        # Query与Place的可见性预测
+        obj_expand = object_node_feat.unsqueeze(2).expand(-1, -1, N_p, -1) # [B, N_o, N_p, D]
+        img_expand = refined_img_bank.unsqueeze(1).expand(-1, N_q, -1, -1) # [B, N_o, N_p, D]
+        vis_input = torch.cat(
+        [
+            obj_expand,
+            img_expand,
+            torch.abs(obj_expand - img_expand),
+        ],
+        dim=-1,
+        )
+        vis_logits = self.vis_pred_head(vis_input).squeeze(-1) # [B, N_q, N_p]
+        PO_matrix = torch.sigmoid(vis_logits) # 连续的可见性概率
+
+        # 每个3D Query根据Place投影为2D Query
+        query_view_input = torch.cat(
+            [
+                obj_expand,
+                img_expand,
+                torch.abs(obj_expand - img_expand),
+            ],
+            dim=-1,
+        )
+        proj_2d_queries = self.query_view_proj(query_view_input) # [B, N_o, D]
+        proj_2d_queries = torch.einsum('bpq,boqd->bopd',PP_matrix,proj_2d_queries)
+        match_logits = torch.einsum('bopd,bpmd->bopm',proj_2d_queries,bbox_tokens)/ (D ** 0.5)
+
+        bboxes_masks = features['bboxes_masks']
+        if bboxes_masks is not None:
+            # bboxes_masks: [B, N_p, M], 1 valid / 0 invalid
+            invalid_bbox_mask = (bboxes_masks == 0).unsqueeze(1)
+            # [B, 1, N_p, M]
+            match_logits = match_logits.masked_fill(
+                invalid_bbox_mask,
+                float('-1000')
+            )
+        visibility_log_gate = torch.log(PO_matrix.clamp(min=1e-6)).unsqueeze(-1)
+        gated_match_logits = match_logits + visibility_log_gate
+        prob_bbox_given_obj = torch.softmax(gated_match_logits, dim=-1)
+        prob_obj_given_bbox = torch.softmax(gated_match_logits, dim=1)
+
+        results = {
+        'object_node_feat': object_node_feat,
+        'object_attn': object_attn,
+        'object_exist_logits': object_exist_logits,
+        'object_cls_logits': object_cls_logits,
+
+        'PP_matrix': PP_matrix,
+        'place_affinity_logits': place_affinity_logits,
+
+        'PO_matrix': PO_matrix,
+        'vis_logits': vis_logits,
+
+        'proj_2d_queries': proj_2d_queries,
+
+        'match_logits': match_logits,
+        'gated_match_logits': gated_match_logits,
+        'prob_bbox_given_obj': prob_bbox_given_obj,
+        'prob_obj_given_bbox': prob_obj_given_bbox,
+
+        'bbox_tokens': bbox_tokens,
+        'bbox_masks': bboxes_masks,
+        }
         return results
+        # 损失计算
+        # 首先将3D Query与3D物体进行匹配得到对应结果
+
+        # 获取3D Query在视角P下投影特征，同时获取与之对应的3D物体在视角P下的二维bbox特征
+        # 2D Query与BBOX特征的相似性损失
+
+        # 帧内唯一性损失：每一个3D Query在每一帧内只能对应一个bbox
+
+        # 可视性损失
+        # 如果3D Query对于Place不可视，则3D Query在该Place的投影应与bbox特征不相似
+        # 如果3D Query对于Place可视，则3D Query在该Place的投影应与bbox特征相似
+
+        # PO矩阵BCE损失
+        # PP矩阵BCE损失
+
+        # 同一3D物体在不同视角下的bbox特征应相似
+
+
+        # # 2. Query 解码 (QueryDecoderLayer 自动使用 V3 + learnable queries)
+        # decoder_outputs = self.query_decoder(
+        #     features['refined_obj_bank'], 
+        #     features['refined_img_bank'],
+        #     bboxes_masks=features['bboxes_masks'],
+        #     stage='step3'
+        # )
+        
+        # # 3. Edge Head 预测
+        # edge_outputs = self.edge_heads(
+        #     decoder_outputs['place_node_feat'],
+        #     decoder_outputs['object_node_feat']
+        # )
+
+        # # 4. 构建统一兼容输出
+        # results = self.build_legacy_compatible_outputs(
+        #     object_node_feat=decoder_outputs['object_node_feat'],
+        #     place_node_feat=decoder_outputs['place_node_feat'],
+        #     bboxes_infos=bboxes_infos,
+        #     decoder_outputs=decoder_outputs,
+        #     edge_outputs=edge_outputs,
+        #     bbox_feats_flat=features['bbox_feats_flat'],
+        # )
+
+        
 
     def forward_step4(self, images, bboxes_infos, bbox_masks=None):
         """
@@ -1166,6 +1345,261 @@ class RelationalMSG(nn.Module):
             gt_sub_labels=gt_sub_labels,
             gt_obj_labels=gt_obj_labels,
         )
+
+    def loss_step3(self, outputs, bboxes_infos, loss_weights=None):
+        # if loss_weights is None:
+        loss_weights = {
+            'pp': 1.0,
+            'po': 1.0,
+            'assign': 2.0,
+            'exist': 1.0,
+            'unique': 0.2,
+        }
+
+        
+
+        PP_matrix = outputs['PP_matrix']
+        place_affinity_logits = outputs['place_affinity_logits']
+
+        PO_matrix = outputs['PO_matrix']
+        vis_logits = outputs['vis_logits']
+
+        gated_match_logits = outputs['gated_match_logits']
+        prob_bbox_given_obj = outputs['prob_bbox_given_obj']
+
+        object_exist_logits = outputs['object_exist_logits']
+
+        place_labels = bboxes_infos.get('place_labels', None)
+
+        B, N_o, N_p, M = gated_match_logits.shape
+        device = gated_match_logits.device
+
+
+        obj_idx = bboxes_infos['obj_idx'].reshape(B, N_p, -1)
+        mask = bboxes_infos['mask'].reshape(B, N_p, -1)
+
+        gt_vis, gt_assign, all_obj_ids = build_instance_targets(obj_idx, mask)
+        GT_PO_matrix = gt_vis
+        GT_PP_matrix = bboxes_infos['place_labels']
+        GT_PP_matrix = torch.stack([GT_PP_matrix[i*N_p:(i+1)*N_p, i*N_p:(i+1)*N_p] for i in range(GT_PP_matrix.shape[0]//N_p)])
+        
+        total_po_loss = 0.0
+        total_assign_loss = 0.0
+        total_exist_loss = 0.0
+        valid_scene_count = 0
+
+        matched_indices = []
+        po_iou_list = []
+        pp_iou_list = []
+        for b in range(B):
+            G = len(all_obj_ids[b])
+            batch_gt_PO_matrix = GT_PO_matrix[b, :G]
+            batch_gt_PP_matrix = GT_PP_matrix[b]
+
+            batch_pred_PP_matrix = PP_matrix[b]
+            batch_pred_PO_matrix = PO_matrix[b]
+            if G == 0:
+                exist_target = torch.zeros(N_o, device=device)
+                total_exist_loss = total_exist_loss + F.binary_cross_entropy_with_logits(
+                    object_exist_logits[b],
+                    exist_target,
+                    reduction='mean'
+                )
+                matched_indices.append(([], []))
+                continue
+
+            cost = compute_query_gt_cost(
+                vis_logits[b],
+                gated_match_logits[b],
+                gt_vis[b, :G],
+                gt_assign[b, :G],
+            )
+
+            row_ind, col_ind = linear_sum_assignment(cost.detach().cpu().numpy())
+
+            row_ind = torch.as_tensor(row_ind, dtype=torch.long, device=device)
+            col_ind = torch.as_tensor(col_ind, dtype=torch.long, device=device)
+
+            matched_indices.append((row_ind, col_ind))
+
+            pred_po = batch_pred_PO_matrix[row_ind]
+            gt_po = batch_gt_PO_matrix[col_ind]
+            po_intersection = torch.sum(torch.logical_and(gt_po, pred_po))
+            po_union = torch.sum(torch.logical_or(gt_po, pred_po))
+            po_iou_list.append((po_intersection + 1e-6) / (po_union + 1e-6))
+
+            pred_pp = batch_pred_PP_matrix
+            gt_pp = batch_gt_PP_matrix
+            num_diag = gt_pp.shape[0]
+            gt_pp_diag = gt_pp.clone()
+            gt_pp_diag.fill_diagonal_(1)
+
+            pred_pp_diag = pred_pp.clone()
+            pred_pp_diag.fill_diagonal_(1)
+            pp_intersection = torch.sum(torch.logical_and(gt_pp_diag, pred_pp_diag)) - num_diag
+            pp_union = torch.sum(torch.logical_or(gt_pp_diag, pred_pp_diag)) - num_diag
+            pp_iou_list.append((pp_intersection + 1e-6) / (pp_union + 1e-6))
+
+            exist_target = torch.zeros(N_o, device=device)
+            exist_target[row_ind] = 1.0
+
+            total_exist_loss = total_exist_loss + F.binary_cross_entropy_with_logits(
+                object_exist_logits[b],
+                exist_target,
+                reduction='mean'
+            )
+
+            total_po_loss = total_po_loss + F.binary_cross_entropy_with_logits(
+                vis_logits[b, row_ind],
+                gt_vis[b, col_ind],
+                reduction='mean'
+            )
+
+            assign_loss = 0.0
+            assign_cnt = 0
+
+            for q, g in zip(row_ind, col_ind):
+                for p in range(N_p):
+                    target_box = gt_assign[b, g, p]
+
+                    if target_box >= 0:
+                        assign_loss = assign_loss + F.cross_entropy(
+                            gated_match_logits[b, q, p].unsqueeze(0),
+                            target_box.unsqueeze(0),
+                            reduction='mean'
+                        )
+                        assign_cnt += 1
+
+            if assign_cnt > 0:
+                assign_loss = assign_loss / assign_cnt
+                total_assign_loss = total_assign_loss + assign_loss
+
+            valid_scene_count += 1
+
+        denom = max(valid_scene_count, 1)
+
+        loss_po = total_po_loss / denom
+        loss_assign = total_assign_loss / denom
+        loss_exist = total_exist_loss / B
+
+        if place_labels is not None:
+            loss_pp = F.binary_cross_entropy_with_logits(
+                torch.block_diag(*place_affinity_logits),
+                place_labels.float(),
+                reduction='mean'
+            )
+        else:
+            loss_pp = torch.tensor(0.0, device=device)
+
+        valid_bbox_mask = mask.unsqueeze(1).float()
+        selected_sum = (prob_bbox_given_obj * valid_bbox_mask).sum(dim=1)
+        loss_unique = F.relu(selected_sum - 1.0).pow(2).mean()
+
+        total_loss = (
+            loss_weights['pp'] * loss_pp
+            + loss_weights['po'] * loss_po
+            + loss_weights['assign'] * loss_assign
+            + loss_weights['exist'] * loss_exist
+            + loss_weights['unique'] * loss_unique
+        )
+
+        loss_dict = {
+            'loss_total': total_loss,
+            'loss_pp': loss_pp,
+            'loss_po': loss_po,
+            'loss_assign': loss_assign,
+            'loss_exist': loss_exist,
+            'loss_unique': loss_unique,
+            'pp_iou': torch.stack(pp_iou_list).mean(),
+            'po_iou': torch.stack(po_iou_list).mean(),
+            # 'matched_indices': matched_indices,
+        }
+
+        return total_loss, loss_dict
+
+import torch
+import torch.nn.functional as F
+from scipy.optimize import linear_sum_assignment
+
+
+def build_instance_targets(obj_idx, mask, invalid_ids=(-1,)):
+    B, N_p, M = obj_idx.shape
+    device = obj_idx.device
+
+    all_vis_targets = []
+    all_assign_targets = []
+    all_obj_ids = []
+
+    max_gt = 0
+
+    for b in range(B):
+        valid_obj_idx = obj_idx[b][mask[b] > 0]
+
+        for invalid_id in invalid_ids:
+            valid_obj_idx = valid_obj_idx[valid_obj_idx != invalid_id]
+
+        obj_ids = torch.unique(valid_obj_idx)
+        obj_ids = obj_ids.sort()[0]
+
+        max_gt = max(max_gt, obj_ids.numel())
+        all_obj_ids.append(obj_ids)
+
+    vis_targets = torch.zeros(B, max_gt, N_p, device=device)
+    assign_targets = torch.full((B, max_gt, N_p), -1, dtype=torch.long, device=device)
+
+    for b in range(B):
+        obj_ids = all_obj_ids[b]
+
+        for g, oid in enumerate(obj_ids):
+            for p in range(N_p):
+                hit = ((obj_idx[b, p] == oid) & (mask[b, p] > 0)).nonzero(as_tuple=False)
+
+                if hit.numel() > 0:
+                    box_id = hit[0, 0]
+                    vis_targets[b, g, p] = 1.0   #在场景b中，物体g在视角p下可见
+                    assign_targets[b, g, p] = box_id  #在场景b中，物体g在视角p下可见的框ID
+
+    return vis_targets, assign_targets, all_obj_ids
+
+
+def compute_query_gt_cost(vis_logits, match_logits, vis_targets, assign_targets):
+    N_o = vis_logits.shape[0]
+    G = vis_targets.shape[0]
+    N_p = vis_logits.shape[1]
+
+    cost = torch.zeros(N_o, G, device=vis_logits.device)
+
+    for q in range(N_o):
+        for g in range(G):
+            vis_cost = F.binary_cross_entropy_with_logits(
+                vis_logits[q],
+                vis_targets[g],
+                reduction='mean'
+            )
+
+            assign_cost = 0.0
+            cnt = 0
+
+            for p in range(N_p):
+                target_box = assign_targets[g, p]
+
+                if target_box >= 0:
+                    assign_cost = assign_cost + F.cross_entropy(
+                        match_logits[q, p].unsqueeze(0),
+                        target_box.unsqueeze(0),
+                        reduction='mean'
+                    )
+                    cnt += 1
+
+            if cnt > 0:
+                assign_cost = assign_cost / cnt
+
+            cost[q, g] = vis_cost + assign_cost
+
+    return cost
+
+
+
 
     # def compute_loss(self, outputs, targets, loss_params=None):
     #     """

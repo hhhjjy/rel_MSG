@@ -112,12 +112,12 @@ def train(config):
     total_training_steps = 0
     training_steps_vid = 0
 
-    if config['eval_step']> 0:
-        model.eval()
-        eval_res = eval(config, logger, model, device)
-        if config["wandb"]:
-            wandb.log(eval_res)
-        model.train()
+    # if config['eval_step']> 0:
+    #     model.eval()
+    #     eval_res = eval(config, logger, model, device)
+    #     if config["wandb"]:
+    #         wandb.log(eval_res)
+    #     model.train()
     # assert 0
     #TODO: need to handle improve the epoch to handle resuming better
     import pickle
@@ -248,16 +248,30 @@ def train_per_video(model, optimizer, dataset, dataloader, device, epoch, loss_p
         if hasattr(model, 'stage') and model.stage != stage:
             model.stage = stage
         
-        # 统一入口: model.forward() 根据 self.stage 自动路由
-        results = model(images, additional_info)
+        forward_version = config.get('stage', 'amosg')
+        if forward_version == 'step2':
+            results = model.forward_step2(images, additional_info)
+            compute_loss_fn = model.compute_loss_step2
+        elif forward_version == 'step3':
+            results = model.forward_step3(images, additional_info)
+            compute_loss_fn = model.compute_loss_step3
+        elif forward_version == 'step4':
+            results = model.forward_step4(images, additional_info)
+            compute_loss_fn = model.compute_loss_step4
+        else:
+            results = model.forward_amosg(images, additional_info)
+            compute_loss_fn = model.compute_loss_amosg
+
+        # # 统一入口: model.forward() 根据 self.stage 自动路由
+        # results = model(images, additional_info)
         
-        # 统一 loss 入口: model.compute_loss() 根据 self.stage 自动路由
-        compute_loss_fn = model.compute_loss
+        # # 统一 loss 入口: model.compute_loss() 根据 self.stage 自动路由
+        # compute_loss_fn = model.compute_loss
         
         additional_info['place_labels'] = place_labels.type(torch.FloatTensor).to(device)
         additional_info['rel_labels'] = rel_labels.type(torch.FloatTensor).to(device)
 
-        total_loss, logs = compute_loss_fn(
+        total_loss, logs = model.loss_step3(
             results, 
             additional_info, 
             loss_weights = loss_params,

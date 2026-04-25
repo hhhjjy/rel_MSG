@@ -15,8 +15,7 @@ class ObjectQueryDecoder(nn.Module):
         self.dim = dim
         self.num_queries = num_queries
         self.num_classes = num_classes
-        
-        self.object_queries = nn.Parameter(torch.randn(num_queries, dim))
+        self.object_queries = nn.Embedding(num_queries, dim)
         
         decoder_layer = nn.TransformerDecoderLayer(
             d_model=dim,
@@ -31,10 +30,11 @@ class ObjectQueryDecoder(nn.Module):
         self.cls_head = nn.Linear(dim, num_classes)
         self.attn_proj = nn.Linear(dim, dim)
 
-    def forward(self, refined_obj_bank):
+    def forward(self, refined_obj_bank, bboxes_masks):
         """
         Args:
-            refined_obj_bank: [B, V, N, C] 跨视角融合后的object bank
+            refined_obj_bank: [B, V*N, C] 跨视角融合后的object bank
+            bboxes_masks: [B, V*N] bbox mask
             
         Returns:
             object_node_feat: [B, Q, C], Q为query数量
@@ -42,13 +42,13 @@ class ObjectQueryDecoder(nn.Module):
             object_exist_logits: [B, Q] existance logits
             object_cls_logits: [B, Q, num_classes] classification logits
         """
-        B, V, N, C = refined_obj_bank.shape
+        B, V_N, C = refined_obj_bank.shape
         
-        memory = refined_obj_bank.reshape(B, V * N, C)
+        memory = refined_obj_bank
         
-        queries = self.object_queries.unsqueeze(0).repeat(B, 1, 1)
+        queries = self.object_queries.weight.unsqueeze(0).repeat(B, 1, 1)
         
-        object_node_feat = self.decoder(queries, memory)
+        object_node_feat = self.decoder(queries, memory,memory_key_padding_mask=~bboxes_masks)
         
         object_attn = torch.bmm(
             self.attn_proj(object_node_feat),
