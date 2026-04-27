@@ -1,5 +1,5 @@
-2026-04-26 00:26:08 - INFO - Experiment directory created at ./exp-results/3rscan_split\2026-04-26_00-26-08
-2026-04-26 00:26:08 - INFO - Training config: {
+2026-04-26 23:44:20 - INFO - Experiment directory created at ./exp-results/3rscan_split\2026-04-26_23-44-20
+2026-04-26 23:44:20 - INFO - Training config: {
     "seed": 42,
     "device": 0,
     "pp_threshold": 0.3,
@@ -7,7 +7,7 @@
     "vis_det": false,
     "eval_split": "test",
     "train_split": "train",
-    "output_dir": "./exp-results/3rscan_split\\2026-04-26_00-26-08",
+    "output_dir": "./exp-results/3rscan_split\\2026-04-26_23-44-20",
     "output_file": "train",
     "learning_rate": 2e-05,
     "num_epochs": 10000,
@@ -15,7 +15,7 @@
     "train_bs": 6,
     "eval_bs": 6,
     "bs_video": 2,
-    "eval_step": 100,
+    "eval_step": 100000,
     "log_every": 1,
     "chkpt_every": 300,
     "loss_params": {
@@ -233,10 +233,10 @@
     "warmup": false,
     "stage": "step3",
     "experiment": "simple",
-    "run_id": "2026-04-26_00-26-08"
+    "run_id": "2026-04-26_23-44-20"
 }
 
-2026-04-26 00:26:08 - INFO - Number of videos in the training set: 5
-2026-04-26 00:26:09 - INFO - Model and optimizer loaded, total parameter 228203033, trainable 55042069
-2026-04-26 00:26:09 - INFO - start training for 10000 epochs
-2026-04-26 00:26:13 - INFO - Training on video ['ad408c93-84db-2095-8829-6100d1b70d80', '1776ad7e-4db7-2333-89e1-66854e82170c'], progress 3/5 Epoch 1
+2026-04-26 23:44:20 - INFO - Number of videos in the training set: 5
+2026-04-26 23:44:21 - INFO - Model and optimizer loaded, total parameter 228203033, trainable 55042069
+2026-04-26 23:44:21 - INFO - start training for 10000 epochs
+2026-04-26 23:44:25 - INFO - Training on video ['ad408c93-84db-2095-8829-6100d1b70d80', '1776ad7e-4db7-2333-89e1-66854e82170c'], progress 3/5 Epoch 1

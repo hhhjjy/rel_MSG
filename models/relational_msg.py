@@ -1391,6 +1391,8 @@ class RelationalMSG(nn.Module):
         matched_indices = []
         po_iou_list = []
         pp_iou_list = []
+        po_iou_loss_list = []
+        pp_iou_loss_list = []
         for b in range(B):
             G = len(all_obj_ids[b])
             batch_gt_PO_matrix = GT_PO_matrix[b, :G]
@@ -1409,8 +1411,8 @@ class RelationalMSG(nn.Module):
                 continue
 
             cost = compute_query_gt_cost(
-                vis_logits[b],
-                gated_match_logits[b],
+                vis_logits[b], #query在视角下可见的probability
+                gated_match_logits[b], #query在视角下与bbox匹配的probability
                 gt_vis[b, :G],
                 gt_assign[b, :G],
             )
@@ -1422,23 +1424,26 @@ class RelationalMSG(nn.Module):
 
             matched_indices.append((row_ind, col_ind))
 
+            # 损失计算
             pred_po = batch_pred_PO_matrix[row_ind]
-            gt_po = batch_gt_PO_matrix[col_ind]
-            po_intersection = torch.sum(torch.logical_and(gt_po, pred_po))
-            po_union = torch.sum(torch.logical_or(gt_po, pred_po))
-            po_iou_list.append((po_intersection + 1e-6) / (po_union + 1e-6))
-
             pred_pp = batch_pred_PP_matrix
+            gt_po = batch_gt_PO_matrix[col_ind]
             gt_pp = batch_gt_PP_matrix
-            num_diag = gt_pp.shape[0]
-            gt_pp_diag = gt_pp.clone()
-            gt_pp_diag.fill_diagonal_(1)
+            # 1. 计算 PO 指标
+            po_iou = calculate_binary_iou(pred_po, gt_po)
+            po_iou_list.append(po_iou)
 
-            pred_pp_diag = pred_pp.clone()
-            pred_pp_diag.fill_diagonal_(1)
-            pp_intersection = torch.sum(torch.logical_and(gt_pp_diag, pred_pp_diag)) - num_diag
-            pp_union = torch.sum(torch.logical_or(gt_pp_diag, pred_pp_diag)) - num_diag
-            pp_iou_list.append((pp_intersection + 1e-6) / (pp_union + 1e-6))
+            # 2. 计算 PP 指标
+            pp_iou = calculate_pp_iou(pred_pp, gt_pp)
+            pp_iou_list.append(pp_iou)
+
+            # 3. 计算损失
+            po_iou_loss = soft_iou_loss(pred_po, gt_po)
+            pp_iou_loss = soft_iou_loss(pred_pp, gt_pp)
+
+            po_iou_loss_list.append(po_iou_loss)
+            pp_iou_loss_list.append(pp_iou_loss)
+
 
             exist_target = torch.zeros(N_o, device=device)
             exist_target[row_ind] = 1.0
@@ -1495,13 +1500,18 @@ class RelationalMSG(nn.Module):
         selected_sum = (prob_bbox_given_obj * valid_bbox_mask).sum(dim=1)
         loss_unique = F.relu(selected_sum - 1.0).pow(2).mean()
 
-        total_loss = (
-            loss_weights['pp'] * loss_pp
-            + loss_weights['po'] * loss_po
-            + loss_weights['assign'] * loss_assign
-            + loss_weights['exist'] * loss_exist
-            + loss_weights['unique'] * loss_unique
-        )
+        loss_pp_iou = torch.stack(pp_iou_loss_list).mean()
+        loss_po_iou = torch.stack(po_iou_loss_list).mean()
+
+        total_loss = loss_pp_iou + loss_po_iou
+
+        # total_loss = (
+        #     loss_weights['pp'] * loss_pp
+        #     + loss_weights['po'] * loss_po
+        #     + loss_weights['assign'] * loss_assign
+        #     + loss_weights['exist'] * loss_exist
+        #     + loss_weights['unique'] * loss_unique
+        # )
 
         loss_dict = {
             'loss_total': total_loss,
@@ -1510,12 +1520,58 @@ class RelationalMSG(nn.Module):
             'loss_assign': loss_assign,
             'loss_exist': loss_exist,
             'loss_unique': loss_unique,
+            'loss_pp_iou': loss_pp_iou,
+            'loss_po_iou': loss_po_iou,
             'pp_iou': torch.stack(pp_iou_list).mean(),
             'po_iou': torch.stack(po_iou_list).mean(),
             # 'matched_indices': matched_indices,
         }
 
         return total_loss, loss_dict
+
+def calculate_binary_iou(pred, gt, threshold=0.5):
+    """
+    计算二值化 IoU（指标专用，会做 >0.5 二值化）
+    :param pred: 模型预测概率 [0~1]
+    :param gt: 真值矩阵
+    :return: iou 值
+    """
+    pred_bin = pred > threshold
+    intersection = torch.sum(torch.logical_and(gt, pred_bin))
+    union = torch.sum(torch.logical_or(gt, pred_bin))
+    iou = (intersection + 1e-6) / (union + 1e-6)
+    return iou
+
+def calculate_pp_iou(pred_pp, gt_pp, threshold=0.5):
+    """
+    专门计算 PP 矩阵的 IoU（处理对角线）
+    """
+    # 二值化
+    pred_pp_bin = pred_pp > threshold
+    num_diag = gt_pp.shape[0]
+
+    # 填充对角线为 1
+    gt_pp_diag = gt_pp.clone()
+    gt_pp_diag.fill_diagonal_(1)
+
+    pred_pp_diag = pred_pp_bin.clone()
+    pred_pp_diag.fill_diagonal_(1)
+
+    # 计算并减去对角线
+    intersection = torch.sum(torch.logical_and(gt_pp_diag, pred_pp_diag)) - num_diag
+    union = torch.sum(torch.logical_or(gt_pp_diag, pred_pp_diag)) - num_diag
+    iou = (intersection + 1e-6) / (union + 1e-6)
+    return iou
+
+def soft_iou_loss(pred, gt):
+    """
+    软 IoU 损失（训练专用，使用原始概率，可导）
+    """
+    intersection = torch.sum(gt * pred + 1e-6)
+    union = torch.sum(gt + pred - gt * pred + 1e-6)
+    loss = 1 - intersection / union
+    return loss
+
 
 import torch
 import torch.nn.functional as F
